@@ -57,4 +57,5 @@ Pour ajouter un nouveau service :
 
 ## Licence
 
-[Votre licence ici] 
+je n'ai pas de licence a jour pour le moment ! 
+
