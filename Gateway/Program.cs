@@ -15,7 +15,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
-        Title = " Micro-service Gateway pour notre API",
+        Title = "Gateway API",
         Version = "v1",
         Description = "API Gateway pour notre app console uqar live"
     });
@@ -27,10 +27,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Gateway API V1");
-    });
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();

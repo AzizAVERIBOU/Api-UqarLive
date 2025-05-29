@@ -3,19 +3,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35303.130
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gateway", "Gateway\Gateway.csproj", "{4593B142-90BF-4A0C-9173-2DC78ABB612B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gateway", "Gateway\Gateway.csproj", "{4593B142-90BF-4A0C-9173-2DC78ABB612B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthentificationService", "AuthentificationService\AuthentificationService.csproj", "{490C4982-57B5-4753-BB6C-21F9D673BAB5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthentificationService", "AuthentificationService\AuthentificationService.csproj", "{490C4982-57B5-4753-BB6C-21F9D673BAB5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssociationService", "AssociationService\AssociationService.csproj", "{CAAB1C9B-3F57-47B0-AA1E-07734F486025}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AssociationService", "AssociationService\AssociationService.csproj", "{CAAB1C9B-3F57-47B0-AA1E-07734F486025}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CafetariaService", "CafetariaService\CafetariaService.csproj", "{E615C0E5-2163-4B4E-B5D5-1C24018F9CE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CafetariaService", "CafetariaService\CafetariaService.csproj", "{E615C0E5-2163-4B4E-B5D5-1C24018F9CE6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BibliothequeService", "BibliothequeService\BibliothequeService.csproj", "{9FFDD8E2-FCF1-47E7-87D9-283F9E91D7D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BibliothequeService", "BibliothequeService\BibliothequeService.csproj", "{9FFDD8E2-FCF1-47E7-87D9-283F9E91D7D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketService", "MarketService\MarketService.csproj", "{455B2680-3055-4BA2-B8D6-EB9D8F146D49}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MarketService", "MarketService\MarketService.csproj", "{455B2680-3055-4BA2-B8D6-EB9D8F146D49}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService", "NotificationService\NotificationService.csproj", "{AB7B9E6B-C865-4C45-94EE-2B04E075DC0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NotificationService", "NotificationService\NotificationService.csproj", "{AB7B9E6B-C865-4C45-94EE-2B04E075DC0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RessourcesPartagees", "RessourcesPartagees\RessourcesPartagees.csproj", "{9472E2DD-4718-4EFD-87B3-66773252B5BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{AB7B9E6B-C865-4C45-94EE-2B04E075DC0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AB7B9E6B-C865-4C45-94EE-2B04E075DC0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AB7B9E6B-C865-4C45-94EE-2B04E075DC0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9472E2DD-4718-4EFD-87B3-66773252B5BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9472E2DD-4718-4EFD-87B3-66773252B5BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9472E2DD-4718-4EFD-87B3-66773252B5BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9472E2DD-4718-4EFD-87B3-66773252B5BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
