@@ -51,4 +51,7 @@ msbuild.wrn
 
 # Logs
 logs/
-*.log 
+*.log
+
+# Migrations
+**/Migrations/ 

@@ -520,5 +520,41 @@ namespace AuthentificationService.Controllers
                 return StatusCode(500, new { message = "Une erreur est survenue lors du changement de mot de passe" });
             }
         }
+
+        [HttpGet("VerifierUtilisateur/{codePermanent}")]
+        public async Task<IActionResult> VerifierUtilisateur(string codePermanent)
+        {
+            try
+            {
+            // Vérifier si l'utilisateur existe dans la base de données
+            var utilisateur = await _context.Utilisateurs
+            .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
+
+            if (utilisateur == null)
+            {
+                return NotFound($"Utilisateur avec le code permanent {codePermanent} non trouvé");
+            }
+
+            // Vérifier si l'utilisateur est actif
+            if (utilisateur.EstActif != true)
+            {
+                return BadRequest($"L'utilisateur {codePermanent} n'est pas actif");
+            }
+
+            // Retourner les informations minimales nécessaires
+            return Ok(new
+            {
+                CodePermanent = utilisateur.CodePermanent,
+                Nom = utilisateur.Nom,
+                Prenom = utilisateur.Prenom,
+                EstActif = utilisateur.EstActif
+            });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Erreur lors de la vérification de l'utilisateur {codePermanent}");
+                return StatusCode(500, "Une erreur est survenue lors de la vérification de l'utilisateur");
+            }
+        }
     }
 } 

@@ -14,3 +14,4 @@ namespace AssociationService.Models
         public RoleUtilisateur RoleUtilisateur { get; set; }
     }
 } 
+
