@@ -240,29 +240,53 @@ namespace AuthentificationService.Controllers
         }
 
         [HttpPost("Deconnexion")]
-        [Authorize]
-        public async Task<IActionResult> Deconnexion()
+        public async Task<IActionResult> Deconnexion([FromBody] string? codePermanent = null)
         {
             try
             {
                 _logger.LogInformation("[Deconnexion] Début de la méthode");
                 
-                // Récupérer le code permanent de l'utilisateur depuis le token
-                var codePermanent = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(codePermanent))
+                string utilisateurCodePermanent = codePermanent;
+
+                // Si aucun code permanent n'est fourni, essayer de le récupérer depuis le token
+                if (string.IsNullOrEmpty(utilisateurCodePermanent))
                 {
-                    _logger.LogWarning("[Deconnexion] Code permanent non trouvé dans le token");
-                    return Unauthorized(new { message = "Token invalide" });
+                    // Vérifier si l'utilisateur est authentifié via token
+                    if (User.Identity?.IsAuthenticated == true)
+                    {
+                        utilisateurCodePermanent = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                        if (string.IsNullOrEmpty(utilisateurCodePermanent))
+                        {
+                            _logger.LogWarning("[Deconnexion] Code permanent non trouvé dans le token");
+                            return Unauthorized(new { message = "Token invalide ou code permanent manquant" });
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("[Deconnexion] Aucun code permanent fourni et utilisateur non authentifié");
+                        return BadRequest(new { message = "Code permanent requis ou token d'authentification valide" });
+                    }
                 }
 
                 // Récupérer l'utilisateur
                 var utilisateur = await _context.Utilisateurs
-                    .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
+                    .FirstOrDefaultAsync(u => u.CodePermanent == utilisateurCodePermanent);
 
                 if (utilisateur == null)
                 {
-                    _logger.LogWarning("[Deconnexion] Utilisateur non trouvé : {CodePermanent}", codePermanent);
+                    _logger.LogWarning("[Deconnexion] Utilisateur non trouvé : {CodePermanent}", utilisateurCodePermanent);
                     return NotFound(new { message = "Utilisateur non trouvé" });
+                }
+
+                // Vérifier si l'utilisateur est déjà déconnecté
+                if (!utilisateur.EstActif)
+                {
+                    _logger.LogInformation("[Deconnexion] Utilisateur déjà déconnecté : {CodePermanent}", utilisateurCodePermanent);
+                    return Ok(new { 
+                        message = "Utilisateur déjà déconnecté",
+                        codePermanent = utilisateurCodePermanent,
+                        estConnecte = false
+                    });
                 }
 
                 // Désactiver l'utilisateur et mettre à jour la dernière connexion
@@ -270,8 +294,12 @@ namespace AuthentificationService.Controllers
                 utilisateur.DerniereConnexion = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("[Deconnexion] Déconnexion réussie pour {CodePermanent}", codePermanent);
-                return Ok(new { message = "Déconnexion réussie" });
+                _logger.LogInformation("[Deconnexion] Déconnexion réussie pour {CodePermanent}", utilisateurCodePermanent);
+                return Ok(new { 
+                    message = "Déconnexion réussie",
+                    codePermanent = utilisateurCodePermanent,
+                    estConnecte = false
+                });
             }
             catch (Exception ex)
             {
@@ -526,34 +554,63 @@ namespace AuthentificationService.Controllers
         {
             try
             {
-            // Vérifier si l'utilisateur existe dans la base de données
-            var utilisateur = await _context.Utilisateurs
-            .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
+                _logger.LogInformation("[VerifierUtilisateur] Vérification de l'utilisateur {CodePermanent}", codePermanent);
 
-            if (utilisateur == null)
-            {
-                return NotFound($"Utilisateur avec le code permanent {codePermanent} non trouvé");
-            }
+                // Vérifier si l'utilisateur existe dans la base de données
+                var utilisateur = await _context.Utilisateurs
+                    .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
 
-            // Vérifier si l'utilisateur est actif
-            if (utilisateur.EstActif != true)
-            {
-                return BadRequest($"L'utilisateur {codePermanent} n'est pas actif");
-            }
+                if (utilisateur == null)
+                {
+                    _logger.LogWarning("[VerifierUtilisateur] Utilisateur non trouvé : {CodePermanent}", codePermanent);
+                    return NotFound(new { 
+                        message = $"Utilisateur avec le code permanent {codePermanent} non trouvé",
+                        codePermanent = codePermanent,
+                        existe = false,
+                        estConnecte = false
+                    });
+                }
 
-            // Retourner les informations minimales nécessaires
-            return Ok(new
-            {
-                CodePermanent = utilisateur.CodePermanent,
-                Nom = utilisateur.Nom,
-                Prenom = utilisateur.Prenom,
-                EstActif = utilisateur.EstActif
-            });
+                // Vérifier si l'utilisateur est connecté (actif)
+                if (!utilisateur.EstActif)
+                {
+                    _logger.LogWarning("[VerifierUtilisateur] Utilisateur non connecté : {CodePermanent}", codePermanent);
+                    return BadRequest(new { 
+                        message = $"L'utilisateur {codePermanent} n'est pas connecté",
+                        codePermanent = codePermanent,
+                        existe = true,
+                        estConnecte = false,
+                        derniereConnexion = utilisateur.DerniereConnexion
+                    });
+                }
+
+                // L'utilisateur existe et est connecté
+                var reponse = new
+                {
+                    message = "Utilisateur connecté et autorisé",
+                    codePermanent = utilisateur.CodePermanent,
+                    nom = utilisateur.Nom,
+                    prenom = utilisateur.Prenom,
+                    email = utilisateur.Email,
+                    role = utilisateur.Role,
+                    existe = true,
+                    estConnecte = true,
+                    derniereConnexion = utilisateur.DerniereConnexion
+                };
+
+                _logger.LogInformation("[VerifierUtilisateur] Utilisateur connecté et autorisé : {CodePermanent}", codePermanent);
+
+                return Ok(reponse);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Erreur lors de la vérification de l'utilisateur {codePermanent}");
-                return StatusCode(500, "Une erreur est survenue lors de la vérification de l'utilisateur");
+                _logger.LogError(ex, "[VerifierUtilisateur] Erreur lors de la vérification de l'utilisateur {CodePermanent}", codePermanent);
+                return StatusCode(500, new { 
+                    message = "Une erreur est survenue lors de la vérification de l'utilisateur",
+                    codePermanent = codePermanent,
+                    existe = false,
+                    estConnecte = false
+                });
             }
         }
     }

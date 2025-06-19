@@ -5,6 +5,7 @@ namespace AssociationService.Models
 {
     public class Membre
     {
+        public int Id { get; set; }
         public string CodePermanent { get; set; }
         public RoleMembre Role { get; set; }
         public DateTime DateAdhesion { get; set; }

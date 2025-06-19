@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text.Json;
 using AssociationService.Models.Enumerations;
 using AssociationService.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace AssociationService.Controllers
 {
@@ -56,13 +57,48 @@ namespace AssociationService.Controllers
                     return BadRequest("La demande ne peut pas être nulle");
                 }
 
-                // Vérifier si l'utilisateur existe dans le service d'authentification
+                // Validation des champs obligatoires
+                if (string.IsNullOrWhiteSpace(demande.Nom))
+                {
+                    return BadRequest("Le nom de l'association est obligatoire");
+                }
+
+                if (string.IsNullOrWhiteSpace(demande.Description))
+                {
+                    return BadRequest("La description est obligatoire");
+                }
+
+                // Vérifier si une association avec le même nom existe déjà
+                var associationExistante = await _context.Associations
+                    .FirstOrDefaultAsync(a => a.Nom.ToLower() == demande.Nom.ToLower());
+
+                if (associationExistante != null)
+                {
+                    return BadRequest("Une association avec ce nom existe déjà");
+                }
+
+                // Vérifier si l'utilisateur existe et est connecté dans le service d'authentification
                 var client = _httpClientFactory.CreateClient("AuthService");
                 var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{demande.CodePermanentCreateur}");
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return BadRequest("L'utilisateur n'existe pas ou n'est pas autorisé à créer une association");
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("[CreerAssociation] Utilisateur non autorisé : {CodePermanent}, Status: {Status}, Response: {Response}", 
+                        demande.CodePermanentCreateur, response.StatusCode, errorContent);
+                    
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        return BadRequest("L'utilisateur n'existe pas dans le système");
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        return BadRequest("L'utilisateur doit être connecté pour créer une association");
+                    }
+                    else
+                    {
+                        return BadRequest("L'utilisateur n'est pas autorisé à créer une association");
+                    }
                 }
 
                 // Créer une nouvelle association à partir de la demande

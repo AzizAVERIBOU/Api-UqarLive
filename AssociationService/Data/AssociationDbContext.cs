@@ -40,7 +40,9 @@ namespace AssociationService.Data
             // Configuration de l'entité Membre
             modelBuilder.Entity<Membre>(entity =>
             {
-                entity.HasKey(e => e.CodePermanent);
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.CodePermanent).IsRequired().HasMaxLength(450);
                 entity.Property(e => e.DateAdhesion).IsRequired();
                 entity.Property(e => e.Role).IsRequired();
                 entity.Property(e => e.Statut).IsRequired();
