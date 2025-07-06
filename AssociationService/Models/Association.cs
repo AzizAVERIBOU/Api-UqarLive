@@ -16,5 +16,6 @@ namespace AssociationService.Models
         public StatutAssociation Statut { get; set; }
         public List<Membre> Membres { get; set; }
         public List<Evenement> Evenements { get; set; }
+        public List<DemandeAdhesion> DemandesAdhesion { get; set; }
     }
 } 

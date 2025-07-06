@@ -1,0 +1,244 @@
+{
+  "associations": [
+    {
+      "nom": "Club Informatique UQAR",
+      "description": "Association dédiée à la promotion de l'informatique et des technologies de l'information. Nous organisons des hackathons, des conférences et des ateliers de programmation.",
+      "categorie": 0,
+      "faculte": 0,
+      "codePermanentCreateur": "DUPO1234",
+      "objectifs": [
+        "Promouvoir l'informatique auprès des étudiants",
+        "Organiser des événements technologiques",
+        "Faciliter les échanges entre étudiants et professionnels",
+        "Développer des projets innovants"
+      ],
+      "activites": [
+        "Hackathons mensuels",
+        "Conférences avec des experts",
+        "Ateliers de programmation",
+        "Projets open source",
+        "Visites d'entreprises tech"
+      ],
+      "dateCreation": "2023-09-15T00:00:00Z",
+      "statut": 0,
+      "membres": [
+        {
+          "codePermanent": "DUPO1234",
+          "role": 0,
+          "dateAdhesion": "2023-09-15T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Présidence", "Organisation des événements"],
+          "associations": ["Club Informatique UQAR"]
+        },
+        {
+          "codePermanent": "TREM5678",
+          "role": 1,
+          "dateAdhesion": "2023-09-20T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Vice-présidence", "Gestion des projets"],
+          "associations": ["Club Informatique UQAR"]
+        }
+      ]
+    },
+    {
+      "nom": "Association des Mathématiciens",
+      "description": "Association pour les passionnés de mathématiques. Nous explorons les mathématiques avancées, organisons des compétitions et des séminaires.",
+      "categorie": 1,
+      "faculte": 1,
+      "codePermanentCreateur": "LACH3456",
+      "objectifs": [
+        "Promouvoir les mathématiques",
+        "Organiser des compétitions mathématiques",
+        "Faciliter la recherche en mathématiques",
+        "Créer une communauté de passionnés"
+      ],
+      "activites": [
+        "Compétitions mathématiques",
+        "Séminaires de recherche",
+        "Tutorat en mathématiques",
+        "Olympiades mathématiques",
+        "Conférences avec des chercheurs"
+      ],
+      "dateCreation": "2023-10-01T00:00:00Z",
+      "statut": 0,
+      "membres": [
+        {
+          "codePermanent": "LACH3456",
+          "role": 0,
+          "dateAdhesion": "2023-10-01T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Présidence", "Organisation des compétitions"],
+          "associations": ["Association des Mathématiciens"]
+        },
+        {
+          "codePermanent": "BEAU7890",
+          "role": 2,
+          "dateAdhesion": "2023-10-05T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Trésorerie", "Gestion des finances"],
+          "associations": ["Association des Mathématiciens"]
+        }
+      ]
+    },
+    {
+      "nom": "Club de Développement Durable",
+      "description": "Association engagée dans la promotion du développement durable et de l'écologie. Nous organisons des activités de sensibilisation et des projets environnementaux.",
+      "categorie": 2,
+      "faculte": 1,
+      "codePermanentCreateur": "MORI0123",
+      "objectifs": [
+        "Promouvoir le développement durable",
+        "Sensibiliser à l'environnement",
+        "Organiser des projets écologiques",
+        "Créer un campus plus vert"
+      ],
+      "activites": [
+        "Nettoyage du campus",
+        "Ateliers de recyclage",
+        "Conférences sur l'environnement",
+        "Projets de jardinage urbain",
+        "Campagnes de sensibilisation"
+      ],
+      "dateCreation": "2023-08-20T00:00:00Z",
+      "statut": 0,
+      "membres": [
+        {
+          "codePermanent": "MORI0123",
+          "role": 0,
+          "dateAdhesion": "2023-08-20T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Présidence", "Coordination des projets"],
+          "associations": ["Club de Développement Durable"]
+        },
+        {
+          "codePermanent": "GAGN2345",
+          "role": 1,
+          "dateAdhesion": "2023-08-25T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Vice-présidence", "Organisation des événements"],
+          "associations": ["Club de Développement Durable"]
+        },
+        {
+          "codePermanent": "FORT4567",
+          "role": 3,
+          "dateAdhesion": "2023-09-01T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Secrétariat", "Communication"],
+          "associations": ["Club de Développement Durable"]
+        }
+      ]
+    },
+    {
+      "nom": "Association des Économistes",
+      "description": "Association pour les étudiants en économie. Nous analysons les tendances économiques, organisons des débats et des conférences avec des experts.",
+      "categorie": 3,
+      "faculte": 2,
+      "codePermanentCreateur": "ROUX6789",
+      "objectifs": [
+        "Analyser les tendances économiques",
+        "Organiser des débats économiques",
+        "Faciliter les échanges avec des experts",
+        "Développer la pensée critique économique"
+      ],
+      "activites": [
+        "Débats économiques",
+        "Conférences avec des économistes",
+        "Analyse de l'actualité économique",
+        "Simulations de marchés",
+        "Visites d'institutions financières"
+      ],
+      "dateCreation": "2023-11-10T00:00:00Z",
+      "statut": 0,
+      "membres": [
+        {
+          "codePermanent": "ROUX6789",
+          "role": 0,
+          "dateAdhesion": "2023-11-10T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Présidence", "Organisation des débats"],
+          "associations": ["Association des Économistes"]
+        },
+        {
+          "codePermanent": "MART9012",
+          "role": 2,
+          "dateAdhesion": "2023-11-15T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Trésorerie", "Gestion administrative"],
+          "associations": ["Association des Économistes"]
+        }
+      ]
+    },
+    {
+      "nom": "Club de Psychologie",
+      "description": "Association pour les étudiants en psychologie. Nous explorons différents domaines de la psychologie, organisons des conférences et des ateliers pratiques.",
+      "categorie": 4,
+      "faculte": 3,
+      "codePermanentCreateur": "BERG8901",
+      "objectifs": [
+        "Explorer les domaines de la psychologie",
+        "Organiser des conférences spécialisées",
+        "Faciliter les échanges avec des psychologues",
+        "Développer des compétences pratiques"
+      ],
+      "activites": [
+        "Conférences de psychologie",
+        "Ateliers pratiques",
+        "Séminaires spécialisés",
+        "Visites de centres psychologiques",
+        "Projets de recherche"
+      ],
+      "dateCreation": "2023-12-01T00:00:00Z",
+      "statut": 0,
+      "membres": [
+        {
+          "codePermanent": "BERG8901",
+          "role": 0,
+          "dateAdhesion": "2023-12-01T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Présidence", "Coordination des activités"],
+          "associations": ["Club de Psychologie"]
+        },
+        {
+          "codePermanent": "LACH3456",
+          "role": 1,
+          "dateAdhesion": "2023-12-05T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Vice-présidence", "Organisation des conférences"],
+          "associations": ["Club de Psychologie"]
+        },
+        {
+          "codePermanent": "BEAU7890",
+          "role": 3,
+          "dateAdhesion": "2023-12-10T00:00:00Z",
+          "statut": 0,
+          "responsabilites": ["Secrétariat", "Gestion des communications"],
+          "associations": ["Club de Psychologie"]
+        }
+      ]
+    }
+  ],
+  "statistiques": {
+    "total": 5,
+    "parCategorie": [
+      {"categorie": "Technologique", "nombre": 1},
+      {"categorie": "Académique", "nombre": 1},
+      {"categorie": "Environnemental", "nombre": 1},
+      {"categorie": "Professionnel", "nombre": 1},
+      {"categorie": "Social", "nombre": 1}
+    ],
+    "parFaculte": [
+      {"faculte": "Génie", "nombre": 1},
+      {"faculte": "Sciences", "nombre": 2},
+      {"faculte": "Gestion", "nombre": 1},
+      {"faculte": "Sciences Humaines", "nombre": 1}
+    ],
+    "totalMembres": 12,
+    "membresParAssociation": [
+      {"association": "Club Informatique UQAR", "membres": 2},
+      {"association": "Association des Mathématiciens", "membres": 2},
+      {"association": "Club de Développement Durable", "membres": 3},
+      {"association": "Association des Économistes", "membres": 2},
+      {"association": "Club de Psychologie", "membres": 3}
+    ]
+  }
+} 

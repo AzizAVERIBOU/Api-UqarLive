@@ -1,0 +1,236 @@
+{
+  "utilisateurs": [
+    {
+      "codePermanent": "DUPO1234",
+      "email": "jean.dupont@uqar.ca",
+      "motDePasse": "MotDePasse123!",
+      "prenom": "Jean",
+      "nom": "Dupont",
+      "programme": "Informatique",
+      "faculte": "Génie",
+      "anneeDebut": 2023,
+      "anneeFin": 2027,
+      "telephone": 5141234567,
+      "role": 0,
+      "adresse": {
+        "numeroCivique": "123",
+        "rue": "Rue Sainte-Catherine",
+        "appartement": "Apt 4B",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H2X 1K4",
+        "codePermanentUtilisateur": "DUPO1234"
+      }
+    },
+    {
+      "codePermanent": "TREM5678",
+      "email": "marie.tremblay@uqar.ca",
+      "motDePasse": "MotDePasse456!",
+      "prenom": "Marie",
+      "nom": "Tremblay",
+      "programme": "Sciences Informatiques",
+      "faculte": "Génie",
+      "anneeDebut": 2020,
+      "anneeFin": 2025,
+      "telephone": 5149876543,
+      "role": 1,
+      "adresse": {
+        "numeroCivique": "456",
+        "rue": "Avenue du Parc",
+        "appartement": "Apt 7C",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H2V 4P3",
+        "codePermanentUtilisateur": "TREM5678"
+      }
+    },
+    {
+      "codePermanent": "MART9012",
+      "email": "pierre.martin@uqar.ca",
+      "motDePasse": "Admin123!",
+      "prenom": "Pierre",
+      "nom": "Martin",
+      "programme": "Administration",
+      "faculte": "Gestion",
+      "anneeDebut": 2018,
+      "anneeFin": 2025,
+      "telephone": 5145551234,
+      "role": 2,
+      "adresse": {
+        "numeroCivique": "789",
+        "rue": "Boulevard René-Lévesque",
+        "appartement": "Apt 12A",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H3B 4W8",
+        "codePermanentUtilisateur": "MART9012"
+      }
+    },
+    {
+      "codePermanent": "LACH3456",
+      "email": "sophie.lachance@uqar.ca",
+      "motDePasse": "MotDePasse789!",
+      "prenom": "Sophie",
+      "nom": "Lachance",
+      "programme": "Mathématiques",
+      "faculte": "Sciences",
+      "anneeDebut": 2022,
+      "anneeFin": 2026,
+      "telephone": 5147778888,
+      "role": 0,
+      "adresse": {
+        "numeroCivique": "321",
+        "rue": "Rue Sherbrooke",
+        "appartement": "Apt 2D",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H3A 2B7",
+        "codePermanentUtilisateur": "LACH3456"
+      }
+    },
+    {
+      "codePermanent": "BEAU7890",
+      "email": "alexandre.beauchamp@uqar.ca",
+      "motDePasse": "MotDePasse321!",
+      "prenom": "Alexandre",
+      "nom": "Beauchamp",
+      "programme": "Physique",
+      "faculte": "Sciences",
+      "anneeDebut": 2021,
+      "anneeFin": 2025,
+      "telephone": 5143334444,
+      "role": 0,
+      "adresse": {
+        "numeroCivique": "654",
+        "rue": "Rue Saint-Denis",
+        "appartement": "Apt 5E",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H2S 2K8",
+        "codePermanentUtilisateur": "BEAU7890"
+      }
+    },
+    {
+      "codePermanent": "GAGN2345",
+      "email": "lucie.gagnon@uqar.ca",
+      "motDePasse": "MotDePasse654!",
+      "prenom": "Lucie",
+      "nom": "Gagnon",
+      "programme": "Chimie",
+      "faculte": "Sciences",
+      "anneeDebut": 2020,
+      "anneeFin": 2024,
+      "telephone": 5146667777,
+      "role": 1,
+      "adresse": {
+        "numeroCivique": "987",
+        "rue": "Avenue Mont-Royal",
+        "appartement": "Apt 8F",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H2V 2N1",
+        "codePermanentUtilisateur": "GAGN2345"
+      }
+    },
+    {
+      "codePermanent": "ROUX6789",
+      "email": "thomas.roux@uqar.ca",
+      "motDePasse": "MotDePasse987!",
+      "prenom": "Thomas",
+      "nom": "Roux",
+      "programme": "Économie",
+      "faculte": "Gestion",
+      "anneeDebut": 2023,
+      "anneeFin": 2027,
+      "telephone": 5149990000,
+      "role": 0,
+      "adresse": {
+        "numeroCivique": "147",
+        "rue": "Rue Rachel",
+        "appartement": "Apt 3G",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H2W 1C7",
+        "codePermanentUtilisateur": "ROUX6789"
+      }
+    },
+    {
+      "codePermanent": "MORI0123",
+      "email": "camille.morin@uqar.ca",
+      "motDePasse": "MotDePasse147!",
+      "prenom": "Camille",
+      "nom": "Morin",
+      "programme": "Biologie",
+      "faculte": "Sciences",
+      "anneeDebut": 2022,
+      "anneeFin": 2026,
+      "telephone": 5142223333,
+      "role": 0,
+      "adresse": {
+        "numeroCivique": "258",
+        "rue": "Rue Laurier",
+        "appartement": "Apt 6H",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H2T 1N8",
+        "codePermanentUtilisateur": "MORI0123"
+      }
+    },
+    {
+      "codePermanent": "FORT4567",
+      "email": "antoine.fortin@uqar.ca",
+      "motDePasse": "MotDePasse258!",
+      "prenom": "Antoine",
+      "nom": "Fortin",
+      "programme": "Génie Civil",
+      "faculte": "Génie",
+      "anneeDebut": 2021,
+      "anneeFin": 2025,
+      "telephone": 5145556666,
+      "role": 0,
+      "adresse": {
+        "numeroCivique": "369",
+        "rue": "Rue Masson",
+        "appartement": "Apt 9I",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H2H 2B2",
+        "codePermanentUtilisateur": "FORT4567"
+      }
+    },
+    {
+      "codePermanent": "BERG8901",
+      "email": "emma.bergeron@uqar.ca",
+      "motDePasse": "MotDePasse369!",
+      "prenom": "Emma",
+      "nom": "Bergeron",
+      "programme": "Psychologie",
+      "faculte": "Sciences Humaines",
+      "anneeDebut": 2023,
+      "anneeFin": 2027,
+      "telephone": 5148889999,
+      "role": 0,
+      "adresse": {
+        "numeroCivique": "741",
+        "rue": "Rue Beaubien",
+        "appartement": "Apt 1J",
+        "ville": "Montréal",
+        "province": "Québec",
+        "codePostal": "H2G 1C3",
+        "codePermanentUtilisateur": "BERG8901"
+      }
+    }
+  ],
+  "statistiques": {
+    "total": 10,
+    "etudiants": 7,
+    "professeurs": 2,
+    "admins": 1,
+    "facultes": [
+      "Génie",
+      "Sciences",
+      "Gestion",
+      "Sciences Humaines"
+    ]
+  }
+} 
