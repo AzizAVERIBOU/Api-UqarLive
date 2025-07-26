@@ -7,7 +7,6 @@ using AuthentificationService.Data;
 using Microsoft.EntityFrameworkCore;
 using RessourcesPartagees.Enumerations;
 using RessourcesPartagees;
-using RessourcesPartagees.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -135,7 +134,7 @@ namespace AuthentificationService.Controllers
                 reponseToken.Message = "Inscription réussie";
 
                 // Envoyer une notification de bienvenue
-                await NotificationHelper.EnvoyerNotificationBienvenueAsync(demande.CodePermanent, demande.Prenom, demande.Nom, "AuthentificationService");
+                // TODO: Envoyer une notification de bienvenue
 
                 _logger.LogInformation("[Inscription] Inscription terminée avec succès pour {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Inscription terminée avec succès pour {demande.Email}");
@@ -173,7 +172,7 @@ namespace AuthentificationService.Controllers
                 await _context.SaveChangesAsync();
 
                 // Envoyer une notification de connexion
-                await NotificationHelper.EnvoyerNotificationConnexionAsync(utilisateur.CodePermanent, utilisateur.Prenom, utilisateur.Nom, "AuthentificationService");
+                // TODO: Envoyer une notification de connexion
 
                 var reponseToken = _jwtToken.GenererToken(utilisateur);
                 reponseToken.Message = "Connexion réussie";
@@ -547,7 +546,7 @@ namespace AuthentificationService.Controllers
                 await _context.SaveChangesAsync();
 
                 // Envoyer une notification de changement de mot de passe
-                await NotificationHelper.EnvoyerNotificationChangementMotDePasseAsync(codePermanent, "AuthentificationService");
+                // TODO: Envoyer une notification de changement de mot de passe
 
                 _logger.LogInformation("[ChangerMotDePasse] Mot de passe changé avec succès pour {CodePermanent}", codePermanent);
                 return Ok(new { message = "Mot de passe changé avec succès" });

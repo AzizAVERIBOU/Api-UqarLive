@@ -1,32 +1,63 @@
+using MarketService.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Configuration de la base de données (SQL Server par défaut)
+builder.Services.AddDbContext<MarketDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Ajouter les services HTTP pour communiquer avec le service d'authentification
+builder.Services.AddHttpClient("AuthService", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5001/");
+});
+
+// Ajout des services MVC
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
+
+// Ajout de Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Market Service API",
+        Version = "v1",
+        Description = "API pour la gestion du marketplace universitaire"
+    });
+    
+    // Filtrer les endpoints système
+    c.DocInclusionPredicate((docName, apiDesc) =>
+    {
+        // Exclure les endpoints de configuration système
+        if (apiDesc.RelativePath?.StartsWith("configuration") == true ||
+            apiDesc.RelativePath?.StartsWith("outputcache") == true)
+        {
+            return false;
+        }
+        return true;
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-
-var summaries = new[]
+// Configuration du pipeline HTTP
+if (app.Environment.IsDevelopment())
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-});
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Logger.LogInformation("Service Market démarré sur le port 5003");
 
 app.Run();
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
