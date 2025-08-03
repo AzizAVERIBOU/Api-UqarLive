@@ -9,6 +9,12 @@ builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange
 // Ajout des services Ocelot
 builder.Services.AddOcelot(builder.Configuration);
 
+// Ajout de l'enregistrement du service SwaggerAggregatorService
+builder.Services.AddScoped<Gateway.Services.SwaggerAggregatorService>();
+
+// Enregistrement de IHttpClientFactory
+builder.Services.AddHttpClient();
+
 // Ajout des services Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
