@@ -22,8 +22,15 @@ builder.Services.AddControllers()
     });
 
 // Configuration de la base de données
+// Récupérer le mot de passe de la variable d'environnement
+var password = Environment.GetEnvironmentVariable("Password");
+
+// Construire la chaîne de connexion complète
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Configurer le DbContext avec la chaîne de connexion complète
 builder.Services.AddDbContext<AuthentificationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
 // Configuration JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
