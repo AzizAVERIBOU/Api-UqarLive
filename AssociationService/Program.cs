@@ -37,27 +37,40 @@ builder.Services.AddSwaggerGen(c =>
 
 // Configuration de la base de données
 builder.Services.AddDbContext<AssociationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
+        sqlServerOptionsAction: sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null);
+        }));
 
 // Ajouter les services HTTP
 builder.Services.AddHttpClient("AuthService", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5000/");
+    // Utiliser le Gateway Azure pour la communication inter-services
+    client.BaseAddress = new Uri("https://uqarlivegateway-hbayescme8ckf7e8.canadacentral-01.azurewebsites.net/");
 });
+
+// Configuration du port d'écoute
+builder.WebHost.UseUrls("http://0.0.0.0:5002");
 
 var app = builder.Build();
 
 // Configuration du pipeline HTTP
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger toujours activé (utile en conteneur)
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Logger.LogInformation("Service Association démarré sur le port 5006");
+// Endpoints de santé et de statut
+app.MapGet("/", () => Results.Ok("Association service up"));
+app.MapGet("/health", () => Results.Ok("Healthy"));
+
+app.Logger.LogInformation("Service Association démarré sur le port 5002");
 
 app.Run();

@@ -3,7 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuration de la base de données (SQL Server par défaut)
+// Configuration du port d'écoute
+builder.WebHost.UseUrls("http://+:5003");
+
+// Forcer le mode développement
+builder.Environment.EnvironmentName = "Development";
+
+// Configuration de la base de données (Azure SQL Database)
 builder.Services.AddDbContext<MarketDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 

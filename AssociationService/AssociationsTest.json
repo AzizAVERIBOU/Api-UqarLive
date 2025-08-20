@@ -1,0 +1,56 @@
+[
+  {
+    "nom": "UQAR Live - Association des Étudiants en Informatique",
+    "description": "Association dédiée aux étudiants en informatique de l'UQAR. Nous organisons des événements techniques, des ateliers de programmation, des conférences et des activités de réseautage pour enrichir l'expérience académique et professionnelle de nos membres.",
+    "categorie": 7,
+    "faculte": 1,
+    "codePermanentCreateur": "AZIZ2025",
+    "dateCreation": "2025-08-16T23:59:25.066Z",
+    "statut": 0
+  },
+  {
+    "nom": "UQAR Live - Association Sportive Universitaire",
+    "description": "Association dédiée à la promotion du sport et de l'activité physique à l'UQAR. Nous organisons des tournois, des entraînements, des compétitions inter-facultés et des événements sportifs pour encourager un mode de vie sain et actif.",
+    "categorie": 2,
+    "faculte": 7,
+    "codePermanentCreateur": "AZIZ2025",
+    "dateCreation": "2025-08-17T00:00:00.000Z",
+    "statut": 0
+  },
+  {
+    "nom": "UQAR Live - Association Culturelle et Artistique",
+    "description": "Association culturelle qui promeut les arts, la musique, le théâtre et la créativité à l'UQAR. Nous organisons des expositions, des spectacles, des ateliers créatifs et des événements culturels pour enrichir la vie étudiante.",
+    "categorie": 1,
+    "faculte": 3,
+    "codePermanentCreateur": "AZIZ2025",
+    "dateCreation": "2025-08-17T00:01:00.000Z",
+    "statut": 0
+  },
+  {
+    "nom": "UQAR Live - Association des Étudiants en Administration",
+    "description": "Association pour les étudiants en administration des affaires. Nous organisons des conférences avec des professionnels, des visites d'entreprises, des ateliers de développement professionnel et des événements de réseautage.",
+    "categorie": 4,
+    "faculte": 5,
+    "codePermanentCreateur": "AZIZ2025",
+    "dateCreation": "2025-08-17T00:02:00.000Z",
+    "statut": 0
+  },
+  {
+    "nom": "UQAR Live - Association Environnementale",
+    "description": "Association dédiée à la protection de l'environnement et au développement durable. Nous organisons des activités de sensibilisation, des projets de reboisement, des conférences sur l'écologie et des initiatives vertes sur le campus.",
+    "categorie": 5,
+    "faculte": 0,
+    "codePermanentCreateur": "AZIZ2025",
+    "dateCreation": "2025-08-17T00:03:00.000Z",
+    "statut": 0
+  },
+  {
+    "nom": "UQAR Live - Association des Étudiants en Sciences",
+    "description": "Association scientifique qui promeut la recherche, l'innovation et la découverte. Nous organisons des conférences scientifiques, des expériences en laboratoire, des projets de recherche et des événements pour stimuler la curiosité scientifique.",
+    "categorie": 7,
+    "faculte": 0,
+    "codePermanentCreateur": "AZIZ2025",
+    "dateCreation": "2025-08-17T00:04:00.000Z",
+    "statut": 0
+  }
+]

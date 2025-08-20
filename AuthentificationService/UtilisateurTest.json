@@ -1,0 +1,23 @@
+{
+  "codePermanent": "TEST2025",
+  "email": "test.test@uqar.ca",
+  "motDePasse": "MotDePasse123!",
+  "prenom": "Test",
+  "nom": "Test",
+  "programme": "Informatique de Gestion",
+  "faculte": "Sciences de l'Administration",
+  "anneeDebut": 2025,
+  "anneeFin": 2028,
+  "telephone": 4185551234,
+  "role": 0,
+  "adresse": {
+    "id": 1,
+    "numeroCivique": "300",
+    "rue": "Allée des Ursulines",
+    "appartement": "Apt 101",
+    "ville": "Rimouski",
+    "province": "QC",
+    "codePostal": "G5L3A1",
+    "codePermanentUtilisateur": "TEST2025"
+  }
+}

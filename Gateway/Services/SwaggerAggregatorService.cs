@@ -34,11 +34,11 @@ namespace Gateway.Services
 
             var services = new[]
             {
-                new { Name = "Authentification", Url = "http://localhost:5001/swagger/v1/swagger.json" },
-                new { Name = "Association", Url = "http://localhost:5006/swagger/v1/swagger.json" },
-                new { Name = "Market", Url = "http://localhost:5003/swagger/v1/swagger.json" },
-                new { Name = "Bibliotheque", Url = "http://localhost:5004/swagger/v1/swagger.json" },
-                new { Name = "Cafetaria", Url = "http://localhost:5005/swagger/v1/swagger.json" }
+                new { Name = "Authentification", Url = "https://uqarliveauth-czhfbpapdfcxhuht.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" },
+                new { Name = "Association", Url = "https://uqarliveassociation-hhfucadyb0dtaugm.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" },
+                new { Name = "Market", Url = "https://uqarlivemarket-cpapfjgzbhdtesf8.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" },
+                new { Name = "Bibliotheque", Url = "https://uqarlivebibliotheque-emg2a5dtbchha9hr.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" },
+                new { Name = "Cafetaria", Url = "https://uqarlivecafetaria-gqbyd6h4f2faesfv.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" }
             };
 
             foreach (var service in services)

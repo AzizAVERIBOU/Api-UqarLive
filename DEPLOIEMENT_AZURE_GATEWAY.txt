@@ -1,0 +1,91 @@
+1) Prérequis
+- Windows + Docker Desktop (conteneurs Linux activés)
+- .NET 8 SDK (si build local nécessaire)
+- Azure CLI (az) connecté: az login
+- Abonnement Azure actif
+
+2) Préparer le Gateway pour Docker
+- Program.cs: écouter sur toutes les interfaces, port 5000
+  builder.WebHost.UseUrls("http://0.0.0.0:5000");
+- Dockerfile: exposer 5000 et publier en Release
+  EXPOSE 5000
+  ENTRYPOINT ["dotnet", "Gateway.dll"]
+
+3) Construire et tester l’image en local
+- Se placer dans Gateway/
+  docker build -t gateway-app .
+- Lancer et tester
+  docker run -d -p 5000:5000 gateway-app
+  Ouvrir: http://localhost:5000/swagger
+- Dépannage local
+  docker ps
+  docker logs <container_id>
+  netstat -ano | findstr :5000 → taskkill /PID <PID> /F si conflit
+
+4) Créer ressources Azure (RG + ACR)
+- Groupe de ressources
+  az group create --name uqarlivegateway_group --location canadacentral
+- (Si besoin) enregistrer provider ACR
+  az provider register --namespace Microsoft.ContainerRegistry
+- ACR (nom en minuscules)
+  az acr create --resource-group uqarlivegateway_group --name uqarliveregstre --sku Basic --location canadacentral
+- Login ACR
+  az acr login --name uqarliveregstre
+
+5) Pousser l’image dans ACR
+- Tag & push
+  docker tag gateway-app uqarliveregstre.azurecr.io/gateway-app:latest
+  docker push uqarliveregstre.azurecr.io/gateway-app:latest
+
+6) Créer App Service (Linux conteneur)
+- Plan Linux (ex: B1)
+  az appservice plan create -g uqarlivegateway_group -n uqarlive_plan --is-linux --sku B1
+- Web App (nom global unique)
+  az webapp create -g uqarlivegateway_group -p uqarlive_plan -n uqarlivegateway --deployment-container-image-name uqarliveregstre.azurecr.io/gateway-app:latest
+
+7) Donner l’accès ACR (AcrPull) via identité managée
+- Activer identité
+  az webapp identity assign -g uqarlivegateway_group -n uqarlivegateway
+- Récupérer IDs et assigner rôle
+  for /f "delims=" %A in ('az webapp show -g uqarlivegateway_group -n uqarlivegateway --query identity.principalId -o tsv') do set APP_ID=%A
+  for /f "delims=" %A in ('az acr show -n uqarliveregstre --query id -o tsv') do set ACR_ID=%A
+  az role assignment create --assignee %APP_ID% --role "AcrPull" --scope %ACR_ID%
+
+8) Configurer conteneur et variables d’app
+- Image (CLI récente)
+  az webapp config container set -g uqarlivegateway_group -n uqarlivegateway --container-image-name uqarliveregstre.azurecr.io/gateway-app:latest --container-registry-url https://uqarliveregstre.azurecr.io
+- Ports d’écoute
+  az webapp config appsettings set -g uqarlivegateway_group -n uqarlivegateway --settings "WEBSITES_PORT=5000" "ASPNETCORE_URLS=http://0.0.0.0:5000"
+
+9) Redémarrer et vérifier
+- Redémarrer
+  az webapp restart -g uqarlivegateway_group -n uqarlivegateway
+- Vérifier config
+  az webapp show -g uqarlivegateway_group -n uqarlivegateway --query "{linuxFxVersion:siteConfig.linuxFxVersion}"
+  az webapp config appsettings list -g uqarlivegateway_group -n uqarlivegateway --query "[?name=='WEBSITES_PORT'||name=='ASPNETCORE_URLS']"
+
+10) Tester en ligne
+- URL standard: https://<nom-app>.azurewebsites.net/swagger
+- Si seul un lien régional de slot fonctionne (ex: ...canadacentral-01...), swapper le slot vers production:
+  az webapp deployment slot swap -g uqarlivegateway_group -n uqarlivegateway --slot <nom-slot> --target-slot production
+
+11) Bonnes pratiques
+- Always On
+  az webapp config set -g uqarlivegateway_group -n uqarlivegateway --always-on true
+- Health check (si route santé)
+  az webapp config set -g uqarlivegateway_group -n uqarlivegateway --health-check-path "/home"
+- Logs conteneur
+  az webapp log config -g uqarlivegateway_group -n uqarlivegateway --docker-container-logging filesystem
+  az webapp log tail -g uqarlivegateway_group -n uqarlivegateway
+
+12) Adapter Ocelot pour la prod
+- Remplacer les downstream localhost par les hôtes Azure (App Services des microservices), ou utiliser un ocelot.Production.json chargé selon l’environnement.
+
+13) Dépannage rapide
+- 404 ressource portail: vérifier existence Web App/slot; swapper si besoin.
+- Conteneur ne répond pas: vérifier WEBSITES_PORT/ASPNETCORE_URLS, logs (log tail).
+- Échec pull ACR: vérifier rôle AcrPull. Sinon activer admin ACR + credentials:
+  az acr update -n uqarliveregstre --admin-enabled true
+  az acr credential show -n uqarliveregstre
+  az webapp config appsettings set -g uqarlivegateway_group -n uqarlivegateway --settings DOCKER_REGISTRY_SERVER_URL=https://uqarliveregstre.azurecr.io DOCKER_REGISTRY_SERVER_USERNAME=<username> DOCKER_REGISTRY_SERVER_PASSWORD=<password>
+- Conflit port local: libérer 5000 (netstat/taskkill) ou changer le port hôte lors du docker run.

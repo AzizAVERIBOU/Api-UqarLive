@@ -3,9 +3,24 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuration de la base de données (SQL Server par défaut)
+// Configuration du port d'écoute
+builder.WebHost.UseUrls("http://+:5005");
+
+// Forcer le mode développement
+builder.Environment.EnvironmentName = "Development";
+
+// Configuration de la base de données (Azure SQL Database)
 builder.Services.AddDbContext<CafetariaDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null);
+    });
+});
 
 // Ajout des services MVC
 builder.Services.AddControllers()

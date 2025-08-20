@@ -3,6 +3,12 @@ using BibliothequeService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuration du port d'écoute
+builder.WebHost.UseUrls("http://+:5004");
+
+// Forcer le mode développement
+builder.Environment.EnvironmentName = "Development";
+
 // Add services to the container.
 builder.Services.AddDbContext<BibliothequeDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

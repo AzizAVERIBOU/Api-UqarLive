@@ -1,42 +1,60 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Ajout de la configuration Ocelot
+// Ocelot config
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
-
-// Ajout des services Ocelot
 builder.Services.AddOcelot(builder.Configuration);
 
-// Ajout de l'enregistrement du service SwaggerAggregatorService
+// Services divers
 builder.Services.AddScoped<Gateway.Services.SwaggerAggregatorService>();
-
-// Enregistrement de IHttpClientFactory
 builder.Services.AddHttpClient();
 
-// Ajout des services Swagger
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "Gateway API",
-        Version = "v1",
+        Version = "1.0",
         Description = "API Gateway pour notre app console uqar live"
     });
 });
 
+// IMPORTANT: écouter sur le port injecté par App Service (WEBSITES_PORT/PORT) ou 5000 par défaut
+var port = Environment.GetEnvironmentVariable("PORT") ??
+           Environment.GetEnvironmentVariable("WEBSITES_PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+// Si l'app est derrière un proxy (App Service), activer les forwarded headers
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedHost;
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+// Swagger toujours dispo
+app.UseSwagger();
+app.UseSwaggerUI();
 
+// NE PAS forcer la redirection HTTPS sur App Service pour laisser passer /health
+// (Tu peux la garder en dev si tu veux, mais pas en prod App Service)
+// app.UseHttpsRedirection();
 
-app.UseHttpsRedirection();
-
-// Utilisation d'Ocelot
+// Ocelot en premier pour le routage des services
 await app.UseOcelot();
+
+// Endpoints de base APRÈS Ocelot pour éviter les conflits de routage
+// Ces endpoints sont gérés directement par ASP.NET Core, pas par Ocelot
+app.MapGet("/health", () => Results.Ok("OK"));
+app.MapGet("/", () => Results.Ok("Gateway up"));
 
 app.Run();

@@ -97,19 +97,23 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.WebHost.UseUrls("http://0.0.0.0:5001");
+
 var app = builder.Build();
 
-// Configuration du pipeline HTTP
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger toujours activé (utile en conteneur)
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // désactivé en conteneur si pas de TLS frontal
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Endpoints de santé et de statut
+app.MapGet("/", () => Results.Ok("Auth service up"));
+app.MapGet("/health", () => Results.Ok("Healthy"));
 
 app.Logger.LogInformation("Service d'Authentification démarré sur le port 5001");
 
