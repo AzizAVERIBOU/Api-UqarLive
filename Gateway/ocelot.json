@@ -12,7 +12,7 @@
     {
       "UpstreamPathTemplate": "/association/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamPathTemplate": "/api/Association/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         { "Host": "uqarliveassociation-hhfucadyb0dtaugm.canadacentral-01.azurewebsites.net", "Port": 443 }
@@ -21,7 +21,7 @@
     {
       "UpstreamPathTemplate": "/bibliotheque/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamPathTemplate": "/api/Bibliotheque/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         { "Host": "uqarlivebibliotheque-emg2a5dtbchha9hr.canadacentral-01.azurewebsites.net", "Port": 443 }
@@ -30,7 +30,7 @@
     {
       "UpstreamPathTemplate": "/market/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamPathTemplate": "/api/Market/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         { "Host": "uqarlivemarket-cpapfjgzbhdtesf8.canadacentral-01.azurewebsites.net", "Port": 443 }
@@ -39,7 +39,7 @@
     {
       "UpstreamPathTemplate": "/cafetaria/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamPathTemplate": "/api/Cafetaria/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         { "Host": "uqarlivecafetaria-gqbyd6h4f2faesfv.canadacentral-01.azurewebsites.net", "Port": 443 }
