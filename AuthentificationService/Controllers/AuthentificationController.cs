@@ -134,7 +134,6 @@ namespace AuthentificationService.Controllers
                 reponseToken.Message = "Inscription réussie";
 
                 // Envoyer une notification de bienvenue
-                // TODO: Envoyer une notification de bienvenue
 
                 _logger.LogInformation("[Inscription] Inscription terminée avec succès pour {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Inscription terminée avec succès pour {demande.Email}");
@@ -171,8 +170,8 @@ namespace AuthentificationService.Controllers
                 utilisateur.EstActif = true;
                 await _context.SaveChangesAsync();
 
-                // Envoyer une notification de connexion
-                // TODO: Envoyer une notification de connexion
+                // Envoyer une notification de connexion 
+                // j'ai supprimer les notifications , ce service n'est pas demandé dans le cahier des charges
 
                 var reponseToken = _jwtToken.GenererToken(utilisateur);
                 reponseToken.Message = "Connexion réussie";

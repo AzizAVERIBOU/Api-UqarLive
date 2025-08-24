@@ -49,12 +49,7 @@ app.UseSwaggerUI();
 // (Tu peux la garder en dev si tu veux, mais pas en prod App Service)
 // app.UseHttpsRedirection();
 
-// Ocelot en premier pour le routage des services
+// Ocelot pour le routage des services
 await app.UseOcelot();
-
-// Endpoints de base APRÈS Ocelot pour éviter les conflits de routage
-// Ces endpoints sont gérés directement par ASP.NET Core, pas par Ocelot
-app.MapGet("/health", () => Results.Ok("OK"));
-app.MapGet("/", () => Results.Ok("Gateway up"));
 
 app.Run();
