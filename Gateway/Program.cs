@@ -45,8 +45,8 @@ app.UseForwardedHeaders();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// NE PAS forcer la redirection HTTPS sur App Service pour laisser passer /health
-// (Tu peux la garder en dev si tu veux, mais pas en prod App Service)
+// Pas de UseHttpsRedirection ici : sur App Service le TLS se termine au proxy ;
+// activer la redirection peut compliquer les health checks et le trafic interne HTTP.
 // app.UseHttpsRedirection();
 
 // Ocelot pour le routage des services

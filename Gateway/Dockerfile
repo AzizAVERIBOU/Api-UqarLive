@@ -32,5 +32,4 @@ WORKDIR /app
 # Copie des fichiers publiés dans l'image finale
 COPY --from=publish /app/publish .
 # Commande de démarrage de l'application
-ENTRYPOINT ["dotnet", "Gateway.dll"] 
-
+ENTRYPOINT ["dotnet", "Gateway.dll"]
