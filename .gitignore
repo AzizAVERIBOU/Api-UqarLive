@@ -54,4 +54,8 @@ logs/
 *.log
 
 # Migrations
-**/Migrations/ 
+**/Migrations/
+
+# Documentation / déploiement (restent en local uniquement)
+DEPLOIEMENT_AZURE_GATEWAY.txt
+GATEWAY-ANALYSIS.md

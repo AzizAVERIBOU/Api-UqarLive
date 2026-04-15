@@ -1,6 +1,4 @@
-using System.Text.Json;
-using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Readers;
+using Microsoft.OpenApi;
 
 namespace Gateway.Services
 {
@@ -28,7 +26,7 @@ namespace Gateway.Services
                 Paths = new OpenApiPaths(),
                 Components = new OpenApiComponents
                 {
-                    Schemas = new Dictionary<string, OpenApiSchema>()
+                    Schemas = new Dictionary<string, IOpenApiSchema>()
                 }
             };
 
@@ -51,8 +49,8 @@ namespace Gateway.Services
                     if (response.IsSuccessStatusCode)
                     {
                         var swaggerJson = await response.Content.ReadAsStringAsync();
-                        var reader = new OpenApiStringReader();
-                        var serviceDoc = reader.Read(swaggerJson, out var diagnostic);
+                        var readResult = OpenApiDocument.Parse(swaggerJson);
+                        var serviceDoc = readResult.Document;
 
                         if (serviceDoc != null)
                         {
