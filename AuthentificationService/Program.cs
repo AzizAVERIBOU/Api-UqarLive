@@ -86,7 +86,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.WebHost.UseUrls("http://0.0.0.0:5001");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5001";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
 
@@ -104,6 +105,6 @@ app.MapControllers();
 app.MapGet("/", () => Results.Ok("Auth service up"));
 app.MapGet("/health", () => Results.Ok("Healthy"));
 
-app.Logger.LogInformation("Service d'Authentification démarré sur le port 5001");
+app.Logger.LogInformation("Service d'Authentification démarré sur le port {Port}", port);
 
 app.Run();
