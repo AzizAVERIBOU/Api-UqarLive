@@ -75,7 +75,7 @@ API-Backend/
 ├── BibliothequeService/
 ├── CafetariaService/
 ├── RessourcesPartagees/     # Types partagés
-├── .github/workflows/ci.yml # Compilation sur push et pull request
+├── .github/workflows/ci.yml # Compilation sur main, develop et pull requests
 └── LICENSE
 ```
 
@@ -151,9 +151,16 @@ Il n’y a pas de `docker-compose` à la racine.
 
 ## Intégration continue
 
-Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) tourne sur chaque push vers `main` et sur chaque pull request vers `main`. Il restaure les paquets et compile `API-Backend.sln` en Release avec le SDK .NET 8.
+Deux branches long terme :
 
-Aucun job ne publie ni ne déploie les services. Le déploiement (Render ou autre) se fera plus tard, en dehors de ce workflow.
+- `main` garde une version qui compile, celle qu'on peut montrer.
+- `develop` reçoit le travail en cours.
+
+Chaque tâche part de `develop` sur une branche `feature/...`, puis y revient par pull request. `main` est mise à jour depuis `develop`, aussi par pull request.
+
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compile `API-Backend.sln` en Release avec le SDK .NET 8. Il tourne sur chaque push vers `main` ou `develop`, sur chaque pull request vers l'une de ces branches, et à la demande depuis l'onglet Actions. Un nouveau push sur la même référence annule le run encore en cours. Les paquets NuGet sont mis en cache.
+
+Aucun job ne publie ni ne déploie les services. Le déploiement se fera plus tard, en dehors de ce workflow.
 
 ---
 
