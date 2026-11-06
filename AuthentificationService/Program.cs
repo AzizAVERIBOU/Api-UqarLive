@@ -23,8 +23,12 @@ builder.Services.AddControllers()
 
 // Configuration de la base de données
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection est absente. Définissez la variable d'environnement ConnectionStrings__DefaultConnection.");
+}
 
-// Configurer le DbContext avec la chaîne de connexion complète
 builder.Services.AddDbContext<AuthentificationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
