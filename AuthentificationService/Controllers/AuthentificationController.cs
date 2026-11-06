@@ -39,6 +39,7 @@ namespace AuthentificationService.Controllers
         }
 
         [HttpGet("test")]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status200OK)]
         public IActionResult Test()
         {
             _logger.LogInformation("Test de l'API d'authentification");
@@ -46,6 +47,8 @@ namespace AuthentificationService.Controllers
         }
 
         [HttpPost("Inscription")]
+        [ProducesResponseType(typeof(ReponseToken), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Inscription([FromBody] DemandeInscription demande)
         {
             try
@@ -170,6 +173,8 @@ namespace AuthentificationService.Controllers
         }
 
         [HttpPost("Connexion")]
+        [ProducesResponseType(typeof(ReponseToken), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Connexion([FromBody] DemandeConnexion demande)
         {
             try
@@ -205,6 +210,8 @@ namespace AuthentificationService.Controllers
         }
 
         [HttpPost("RafraichirToken")]
+        [ProducesResponseType(typeof(ReponseToken), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> RafraichirToken([FromBody] string refreshToken)
         {
             try
@@ -266,6 +273,8 @@ namespace AuthentificationService.Controllers
 
         [HttpPost("Deconnexion")]
         [Authorize]
+        [ProducesResponseType(typeof(DeconnexionApi), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status401Unauthorized)]
         public IActionResult Deconnexion()
         {
             var codePermanent = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -285,6 +294,8 @@ namespace AuthentificationService.Controllers
 
         [HttpGet("ObtenirProfilUtilisateur")]
         [Authorize]
+        [ProducesResponseType(typeof(ProfilApi), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ObtenirProfil()
         {
             try
@@ -356,6 +367,9 @@ namespace AuthentificationService.Controllers
 
         [HttpPut("MettreAJourProfilUtilisateur")]
         [Authorize]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ModifierProfil([FromBody] DemandeMiseAJourProfil demande)
         {
             try
@@ -466,6 +480,9 @@ namespace AuthentificationService.Controllers
 
         [HttpPost("ChangerMotDePasse")]
         [Authorize]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(MessageApi), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ChangerMotDePasse([FromBody] DemandeChangementMotDePasse demande)
         {
             try
@@ -538,6 +555,8 @@ namespace AuthentificationService.Controllers
         }
 
         [HttpGet("VerifierUtilisateur/{codePermanent}")]
+        [ProducesResponseType(typeof(VerificationUtilisateurApi), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(VerificationUtilisateurApi), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> VerifierUtilisateur(string codePermanent)
         {
             try

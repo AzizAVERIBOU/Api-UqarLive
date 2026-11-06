@@ -19,6 +19,25 @@ public class ContratAuthentificationTests
     }
 
     [Fact]
+    public async Task Swagger_MontreLeContrat()
+    {
+        var reponse = await _client.GetAsync("/swagger/v1/swagger.json");
+        var document = await Lire(reponse);
+
+        Assert.Equal(HttpStatusCode.OK, reponse.StatusCode);
+        Assert.Contains("REND20261106", document.ToString());
+        Assert.Contains("0 Etudiant", document.ToString());
+
+        var inscription = document.GetProperty("paths").GetProperty("/api/Authentification/Inscription").GetProperty("post");
+        Assert.Equal("Crée un compte étudiant et renvoie un jeton.", inscription.GetProperty("summary").GetString());
+        Assert.False(inscription.TryGetProperty("security", out _));
+
+        var deconnexion = document.GetProperty("paths").GetProperty("/api/Authentification/Deconnexion").GetProperty("post");
+        Assert.True(deconnexion.TryGetProperty("security", out _));
+        Assert.True(document.GetProperty("paths").TryGetProperty("/health", out _));
+    }
+
+    [Fact]
     public async Task Sante_Repond()
     {
         var racine = await _client.GetAsync("/");

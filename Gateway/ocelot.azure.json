@@ -13,15 +13,15 @@
       "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
     },
     {
-      "DownstreamPathTemplate": "/api/authentification/{everything}",
+      "DownstreamPathTemplate": "/api/Authentification/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "uqarliveauth-czhfbpapdfcxhuht.canadacentral-01.azurewebsites.net",
+          "Host": "api-uqarlive.onrender.com",
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/api/authentification/{everything}",
+      "UpstreamPathTemplate": "/api/Authentification/{everything}",
       "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
     }
   ],

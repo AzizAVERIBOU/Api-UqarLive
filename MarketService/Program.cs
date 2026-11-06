@@ -14,9 +14,15 @@ builder.Services.AddDbContext<MarketDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Ajouter les services HTTP pour communiquer avec le service d'authentification
+var authService = builder.Configuration["Services:AuthService"];
+if (string.IsNullOrWhiteSpace(authService))
+{
+    authService = "https://api-uqarlive.onrender.com";
+}
+
 builder.Services.AddHttpClient("AuthService", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5001/");
+    client.BaseAddress = new Uri(authService.TrimEnd('/') + "/");
 });
 
 // Ajout des services MVC
