@@ -45,6 +45,10 @@ namespace AuthentificationService.Data
                     .IsRequired()
                     .HasMaxLength(50);
 
+                entity.Property(e => e.Telephone)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
                 entity.Property(e => e.Role)
                     .IsRequired()
                     .HasConversion<string>();

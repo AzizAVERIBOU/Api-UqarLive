@@ -22,19 +22,26 @@ builder.Services.AddControllers()
     });
 
 // Configuration de la base de données
-// Récupérer le mot de passe de la variable d'environnement
-var password = Environment.GetEnvironmentVariable("Password");
-
-// Construire la chaîne de connexion complète
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection est absente. Définissez la variable d'environnement ConnectionStrings__DefaultConnection.");
+}
 
-// Configurer le DbContext avec la chaîne de connexion complète
 builder.Services.AddDbContext<AuthentificationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Configuration JWT
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]);
+const string cleJwtExemple = "votre_cle_secrete_tres_longue_et_complexe_ici";
+var cleJwt = builder.Configuration["JwtSettings:SecretKey"];
+if (string.IsNullOrWhiteSpace(cleJwt) || cleJwt == cleJwtExemple)
+{
+    throw new InvalidOperationException(
+        "JwtSettings:SecretKey est absente ou encore égale à la valeur d'exemple. Définissez la variable d'environnement JwtSettings__SecretKey.");
+}
+
+var key = Encoding.ASCII.GetBytes(cleJwt);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -90,6 +97,12 @@ var port = Environment.GetEnvironmentVariable("PORT") ?? "5001";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AuthentificationDbContext>();
+    db.Database.Migrate();
+}
 
 // Swagger toujours activé (utile en conteneur)
 app.UseSwagger();
