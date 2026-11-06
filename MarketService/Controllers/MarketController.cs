@@ -69,7 +69,7 @@ namespace MarketService.Controllers
 
             // Vérifier que l'utilisateur existe dans le service d'authentification
             var client = _httpClientFactory.CreateClient("AuthService");
-            var response = await client.GetAsync($"api/authentification/VerifierUtilisateur/{produit.CodePermanentVendeur}");
+            var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{produit.CodePermanentVendeur}");
 
             if (!response.IsSuccessStatusCode)
             {

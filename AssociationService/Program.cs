@@ -47,10 +47,15 @@ builder.Services.AddDbContext<AssociationDbContext>(options =>
         }));
 
 // Ajouter les services HTTP
+var authService = builder.Configuration["Services:AuthService"];
+if (string.IsNullOrWhiteSpace(authService))
+{
+    authService = "https://api-uqarlive.onrender.com";
+}
+
 builder.Services.AddHttpClient("AuthService", client =>
 {
-    // Utiliser le Gateway Azure pour la communication inter-services
-    client.BaseAddress = new Uri("https://uqarlivegateway-hbayescme8ckf7e8.canadacentral-01.azurewebsites.net/");
+    client.BaseAddress = new Uri(authService.TrimEnd('/') + "/");
 });
 
 // Configuration du port d'écoute

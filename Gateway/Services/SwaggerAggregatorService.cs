@@ -32,7 +32,7 @@ namespace Gateway.Services
 
             var services = new[]
             {
-                new { Name = "Authentification", Url = "https://uqarliveauth-czhfbpapdfcxhuht.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" },
+                new { Name = "Authentification", Url = "https://api-uqarlive.onrender.com/swagger/v1/swagger.json" },
                 new { Name = "Association", Url = "https://uqarliveassociation-hhfucadyb0dtaugm.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" },
                 new { Name = "Market", Url = "https://uqarlivemarket-cpapfjgzbhdtesf8.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" },
                 new { Name = "Bibliotheque", Url = "https://uqarlivebibliotheque-emg2a5dtbchha9hr.canadacentral-01.azurewebsites.net/swagger/v1/swagger.json" },

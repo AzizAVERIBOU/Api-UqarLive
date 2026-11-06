@@ -173,7 +173,7 @@ namespace BibliothequeService.Controllers
             try
             {
                 var httpClient = _httpClientFactory.CreateClient("AuthService");
-                var response = await httpClient.GetAsync($"api/authentification/utilisateurs/{reservation.CodePermanentReservateur}");
+                var response = await httpClient.GetAsync($"api/Authentification/VerifierUtilisateur/{reservation.CodePermanentReservateur}");
                 
                 if (!response.IsSuccessStatusCode)
                 {

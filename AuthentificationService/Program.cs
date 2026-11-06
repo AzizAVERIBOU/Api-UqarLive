@@ -73,24 +73,25 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Service d'Authentification API",
+        Title = "UQAR Live — Authentification",
         Version = "v1",
-        Description = "API pour la gestion de l'authentification des utilisateurs"
+        Description = """
+            Comptes, jetons et vérification des codes permanents.
+            L'inscription et la connexion sont ouvertes. Le profil, la mise à jour, la déconnexion et le changement de mot de passe exigent le bouton Authorize, avec le jeton reçu à la connexion.
+            L'inscription enregistre toujours le rôle Etudiant (0). Le mot de passe compte au moins 8 caractères. Le jeton dure 60 minutes.
+            """
     });
 
-    // Configuration de Swagger pour JWT (Microsoft.OpenApi 2.x / Swashbuckle 10)
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Description = "Collez le jeton reçu à la connexion, sans le mot Bearer.",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT"
     });
 
-    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecuritySchemeReference("Bearer", document, externalResource: null)] = []
-    });
+    c.SchemaFilter<AuthentificationService.Swagger.ExemplesSwagger>();
+    c.OperationFilter<AuthentificationService.Swagger.DescriptionsSwagger>();
 });
 
 var environnement = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
@@ -110,7 +111,12 @@ using (var scope = app.Services.CreateScope())
 
 // Swagger toujours activé (utile en conteneur)
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    c.DocumentTitle = "UQAR Live — Authentification";
+    c.DefaultModelsExpandDepth(2);
+    c.DisplayRequestDuration();
+});
 
 // app.UseHttpsRedirection(); // désactivé en conteneur si pas de TLS frontal
 
@@ -119,8 +125,12 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Endpoints de santé et de statut
-app.MapGet("/", () => Results.Ok("Auth service up"));
-app.MapGet("/health", () => Results.Ok("Healthy"));
+app.MapGet("/", () => Results.Ok("Auth service up"))
+    .WithTags("Santé")
+    .WithSummary("Le processus est démarré.");
+app.MapGet("/health", () => Results.Ok("Healthy"))
+    .WithTags("Santé")
+    .WithSummary("Sonde utilisée par Render.");
 
 app.Logger.LogInformation(
     "Service d'Authentification démarré sur le port {Port}",
