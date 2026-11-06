@@ -1,10 +1,13 @@
 # UQAR Live — API Backend (microservices)
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/8.0)
-[![Azure App Service](https://img.shields.io/badge/Azure-App%20Service-0078D4)](https://azure.microsoft.com/services/app-service/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1)](https://www.postgresql.org/)
 [![Ocelot](https://img.shields.io/badge/Gateway-Ocelot-009639)](https://github.com/ThreeMammals/Ocelot)
+[![CI](https://github.com/AzizAVERIBOU/Api-UqarLive/actions/workflows/ci.yml/badge.svg)](https://github.com/AzizAVERIBOU/Api-UqarLive/actions/workflows/ci.yml)
 
-Backend **microservices** pour l’application **UQAR Live** : APIs REST en **ASP.NET Core** (.NET 8), routage centralisé via **Ocelot**, persistance **SQL Server** avec **Entity Framework Core**, déploiement cible **Azure App Service**.
+Backend **microservices** pour l’application **UQAR Live** : APIs REST en **ASP.NET Core** (.NET 8), routage centralisé via **Ocelot**, persistance **PostgreSQL** avec **Entity Framework Core** et **Npgsql**.
+
+Le dépôt vérifie la compilation avec **GitHub Actions**. Il n’y a pas de déploiement automatique pour le moment.
 
 **Dépôt :** [https://github.com/AzizAVERIBOU/Api-UqarLive](https://github.com/AzizAVERIBOU/Api-UqarLive)
 
@@ -21,8 +24,9 @@ Backend **microservices** pour l’application **UQAR Live** : APIs REST en **AS
 - [Exécution locale](#exécution-locale)
 - [Configuration](#configuration)
 - [Docker](#docker)
-- [Environnements Azure (référence)](#environnements-azure-référence)
+- [Intégration continue](#intégration-continue)
 - [Documentation des API](#documentation-des-api)
+- [Migrations Entity Framework](#migrations-entity-framework)
 - [Contribution et licence](#contribution-et-licence)
 - [Auteur](#auteur)
 
@@ -32,28 +36,30 @@ Backend **microservices** pour l’application **UQAR Live** : APIs REST en **AS
 
 | Composant | Rôle | Port local (exemple) |
 |-----------|------|-------------------------|
-| **Gateway** | Point d’entrée unique, **Ocelot** (`ocelot.json`), Swagger UI, agrégation Swagger | `5000` (ou `PORT` / `WEBSITES_PORT`) |
+| **Gateway** | Point d’entrée unique, **Ocelot** (`ocelot.json`), Swagger UI | `5000` (ou `PORT`) |
 | **AuthentificationService** | Comptes, JWT (`JwtBearer`) | `5001` |
 | **AssociationService** | Associations, adhésions, événements | `5002` |
 | **MarketService** | Marketplace | `5003` |
 | **BibliothequeService** | Bibliothèque / salles | `5004` |
-| **CafetariaService** | Cafétéria, menus | `5005` |
-| **RessourcesPartagees** | Bibliothèque de classes partagée (référencée par certains services) | — |
+| **CafetariaService** | Cafétéria, menus et horaires | `5005` |
+| **RessourcesPartagees** | Bibliothèque de classes partagée | — |
 
-Chaque service métier expose ses propres contrôleurs et, en général, un **DbContext** EF Core dédié (bases distinctes côté configuration).
+Chaque service métier a son propre **DbContext**. Tous lisent `ConnectionStrings:DefaultConnection` et peuvent partager une même base PostgreSQL.
 
 ---
 
 ## Stack technique
 
 - **Runtime / framework :** .NET **8.0**, C# avec nullable reference types.
-- **ORM :** **Entity Framework Core 9.0.11** + provider **Microsoft.EntityFrameworkCore.SqlServer**.
+- **ORM :** **Entity Framework Core 9.0.11** + provider **Npgsql.EntityFrameworkCore.PostgreSQL 9.0.4**.
+- **Base :** **PostgreSQL 18**.
 - **Gateway :** **Ocelot 24.1.0**, **Swashbuckle.AspNetCore 10.1.7** (OpenAPI via **Microsoft.OpenApi 2.x**).
 - **APIs :** **Swashbuckle.AspNetCore 10.1.7** sur les services web ; **Microsoft.AspNetCore.OpenApi 8.0.22** là où il est référencé.
 - **Auth :** **Microsoft.AspNetCore.Authentication.JwtBearer 8.0.22**.
 - **JSON :** **Newtonsoft.Json 13.0.4** (là où le package est présent) et **System.Text.Json** (ASP.NET Core).
+- **CI :** GitHub Actions, build Release de `API-Backend.sln`. Pas de déploiement dans le workflow.
 
-> Les versions **EF Core 10** et **ASP.NET Core 10** sur NuGet ciblent **.NET 10** ; ce dépôt reste sur **.NET 8** avec les dernières versions **compatibles net8.0**.
+> Les versions **EF Core 10** et **ASP.NET Core 10** sur NuGet ciblent **.NET 10** ; ce dépôt reste sur **.NET 8** avec les versions **compatibles net8.0**.
 
 ---
 
@@ -62,14 +68,14 @@ Chaque service métier expose ses propres contrôleurs et, en général, un **Db
 ```
 API-Backend/
 ├── API-Backend.sln
-├── Gateway/                 # Ocelot, Swagger, agrégation OpenAPI
+├── Gateway/                 # Ocelot, Swagger
 ├── AuthentificationService/
 ├── AssociationService/
 ├── MarketService/
 ├── BibliothequeService/
 ├── CafetariaService/
-├── RessourcesPartagees/     # Types partagés (EF référencé si besoin)
-├── .github/workflows/       # CI/CD Azure (selon branches)
+├── RessourcesPartagees/     # Types partagés
+├── .github/workflows/ci.yml # Compilation sur push et pull request
 └── LICENSE
 ```
 
@@ -78,7 +84,7 @@ API-Backend/
 ## Prérequis et installation
 
 1. **SDK :** [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) ou supérieur (pour compiler un projet `net8.0`).
-2. **SQL Server** (local, conteneur ou Azure SQL) et chaînes de connexion configurées.
+2. **PostgreSQL 18** (local ou hébergé) et une chaîne de connexion Npgsql.
 3. **Git**
 
 ```bash
@@ -88,7 +94,7 @@ dotnet restore API-Backend.sln
 dotnet build API-Backend.sln -c Release
 ```
 
-En cas de contrainte mémoire sur la machine de build, vous pouvez limiter le parallélisme MSBuild : `dotnet build API-Backend.sln -c Release -m:1`.
+En cas de contrainte mémoire sur la machine de build, limitez le parallélisme MSBuild : `dotnet build API-Backend.sln -c Release -m:1`.
 
 ---
 
@@ -101,77 +107,73 @@ dotnet run --project Gateway
 dotnet run --project AuthentificationService
 ```
 
-Les ports réels dépendent de `launchSettings.json`, de `UseUrls` dans `Program.cs` (certains services fixent un port) et des variables d’environnement (**`PORT`** / **`WEBSITES_PORT`** sur le Gateway, aligné avec Azure App Service).
+Les ports viennent de `launchSettings.json` et de `UseUrls` dans `Program.cs`. La gateway écoute `PORT`, sinon `5000`.
 
-**Santé (exemple) :** le service d’authentification expose des routes simples de statut (`/` et `/health` dans `Program.cs`). Pour le Gateway, privilégier **Swagger** ou la route **Home** selon la configuration des contrôleurs.
+**Santé :** le service d’authentification expose `/` et `/health`.
 
 ---
 
 ## Configuration
 
-### Chaînes de connexion
+### Chaîne de connexion
 
-Utiliser `ConnectionStrings:DefaultConnection` (fichiers `appsettings.json` / `appsettings.Development.json` ou variables d’environnement `ConnectionStrings__DefaultConnection`).
+Les services lisent `ConnectionStrings:DefaultConnection`. En déploiement, posez-la dans la variable d’environnement `ConnectionStrings__DefaultConnection`. Ne commitez pas de mot de passe.
+
+Format Npgsql :
+
+```text
+Host=localhost;Port=5432;Database=uqarlive;Username=postgres;Password=...;SSL Mode=Prefer
+```
+
+Pour un PostgreSQL Render, utilisez l’hôte interne et `SSL Mode=Require;Trust Server Certificate=true`. L’URL `postgresql://...` du tableau de bord n’est pas le format attendu par Npgsql.
 
 ### JWT (AuthentificationService)
 
-Configurer la section **JwtSettings** (notamment la clé secrète), par exemple via variables d’environnement ou secrets utilisateur, **sans** commiter de secrets.
+Configurez la section **JwtSettings**, en particulier la clé secrète, via les variables d’environnement ou les secrets utilisateur.
 
 ### Gateway (Ocelot)
 
-Fichiers **`Gateway/ocelot.json`** (et variantes Azure si présentes) : chemins amont / aval vers les instances des microservices.
+`Gateway/ocelot.json` décrit les chemins amont et les hôtes aval. Adaptez les hôtes à l’environnement (local ou hébergé). Les préfixes publics sont `/auth/…`, `/association/…`, `/bibliotheque/…`, `/market/…` et `/cafetaria/…`.
 
 ---
 
 ## Docker
 
-Des **Dockerfile** sont présents par service (Gateway et services métier). Exemple de build local :
+Chaque service a un Dockerfile. Le contexte de build est la **racine du dépôt**, parce que les Dockerfiles copient les `.csproj` depuis cette racine.
 
 ```bash
-docker build -t uqarlive-gateway -f Gateway/Dockerfile Gateway
+docker build -t uqarlive-gateway -f Gateway/Dockerfile .
 ```
 
-Il n’y a pas de fichier `docker-compose` à la racine du dépôt ; l’orchestration locale multi-conteneurs reste à votre convenance.
+Il n’y a pas de `docker-compose` à la racine.
 
 ---
 
-## Environnements Azure (référence)
+## Intégration continue
 
-Les URL ci-dessous correspondent à une configuration **App Service (Canada Central)** documentée dans le projet ; elles peuvent évoluer selon votre abonnement Azure.
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) tourne sur chaque push vers `main` et sur chaque pull request vers `main`. Il restaure les paquets et compile `API-Backend.sln` en Release avec le SDK .NET 8.
 
-| Rôle | URL (exemple) |
-|------|----------------|
-| Gateway | `https://uqarlivegateway-hbayescme8ckf7e8.canadacentral-01.azurewebsites.net` |
-| Swagger Gateway | …`/swagger` |
-| Authentification | `https://uqarliveauth-czhfbpapdfcxhuht.canadacentral-01.azurewebsites.net` |
-| Associations | `https://uqarliveassociation-hhfucadyb0dtaugm.canadacentral-01.azurewebsites.net` |
-| Market | `https://uqarlivemarket-cpapfjgzbhdtesf8.canadacentral-01.azurewebsites.net` |
-| Bibliothèque | `https://uqarlivebibliotheque-emg2a5dtbchha9hr.canadacentral-01.azurewebsites.net` |
-| Cafétéria | `https://uqarlivecafetaria-gqbyd6h4f2faesfv.canadacentral-01.azurewebsites.net` |
-
-Les routes exposées publiquement passent en pratique par le **Gateway** (préfixes du type `/auth/…`, `/association/…`, etc., selon `ocelot.json`).
+Aucun job ne publie ni ne déploie les services. Le déploiement (Render ou autre) se fera plus tard, en dehors de ce workflow.
 
 ---
 
 ## Documentation des API
 
-- **Swagger UI** est activé sur les services qui configurent Swashbuckle.
-- Le Gateway peut exposer une documentation agrégée (selon implémentation : contrôleur Swagger / agrégateur OpenAPI).
-
-Pour le détail des chemins et des corps de requête, se référer au **Swagger** du service concerné ou à la doc OpenAPI générée.
+Swagger UI est activé sur les services qui configurent Swashbuckle. Le détail des chemins et des corps de requête est dans le Swagger du service concerné.
 
 ---
 
 ## Migrations Entity Framework
 
-Si des migrations sont utilisées pour un service :
+Aucune migration n’est versionnée dans le dépôt pour le moment. Après avoir configuré `ConnectionStrings__DefaultConnection` vers PostgreSQL :
 
 ```bash
+dotnet tool install --global dotnet-ef
+dotnet ef migrations add Initial --project AuthentificationService
 dotnet ef database update --project AuthentificationService
-# Adapter le nom du projet (.csproj) selon le service
 ```
 
-La présence du dossier `Migrations/` peut être ignorée par Git selon `.gitignore` ; en cas d’absence de migrations versionnées, suivre la convention de votre équipe.
+Répétez en remplaçant le nom du projet pour Association, Market, Bibliothèque et Cafétéria.
 
 ---
 
@@ -190,4 +192,4 @@ La présence du dossier `Migrations/` peut être ignorée par Git selon `.gitign
 
 ---
 
-*UQAR Live — APIs microservices .NET 8, gateway Ocelot, persistance SQL Server.*
+*UQAR Live — APIs microservices .NET 8, gateway Ocelot, persistance PostgreSQL.*

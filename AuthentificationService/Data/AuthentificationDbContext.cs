@@ -55,7 +55,7 @@ namespace AuthentificationService.Data
 
                 // Configuration des valeurs par défaut
                 entity.Property(e => e.DateCreation)
-                    .HasDefaultValueSql("GETDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.EstActif)
                     .HasDefaultValue(true);

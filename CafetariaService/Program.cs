@@ -9,16 +9,16 @@ builder.WebHost.UseUrls("http://+:5005");
 // Forcer le mode développement
 builder.Environment.EnvironmentName = "Development";
 
-// Configuration de la base de données (Azure SQL Database)
+// Configuration de la base de données (PostgreSQL)
 builder.Services.AddDbContext<CafetariaDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+    options.UseNpgsql(connectionString, npgsqlOptions =>
     {
-        sqlOptions.EnableRetryOnFailure(
+        npgsqlOptions.EnableRetryOnFailure(
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null);
+            errorCodesToAdd: null);
     });
 });
 

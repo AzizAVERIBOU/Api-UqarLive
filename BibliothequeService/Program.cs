@@ -11,7 +11,7 @@ builder.Environment.EnvironmentName = "Development";
 
 // Add services to the container.
 builder.Services.AddDbContext<BibliothequeDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

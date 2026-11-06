@@ -9,9 +9,9 @@ builder.WebHost.UseUrls("http://+:5003");
 // Forcer le mode développement
 builder.Environment.EnvironmentName = "Development";
 
-// Configuration de la base de données (Azure SQL Database)
+// Configuration de la base de données (PostgreSQL)
 builder.Services.AddDbContext<MarketDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Ajouter les services HTTP pour communiquer avec le service d'authentification
 builder.Services.AddHttpClient("AuthService", client =>

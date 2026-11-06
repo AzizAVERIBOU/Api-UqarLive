@@ -37,13 +37,13 @@ builder.Services.AddSwaggerGen(c =>
 
 // Configuration de la base de données
 builder.Services.AddDbContext<AssociationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
-        sqlServerOptionsAction: sqlOptions =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions =>
         {
-            sqlOptions.EnableRetryOnFailure(
+            npgsqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 3,
                 maxRetryDelay: TimeSpan.FromSeconds(5),
-                errorNumbersToAdd: null);
+                errorCodesToAdd: null);
         }));
 
 // Ajouter les services HTTP

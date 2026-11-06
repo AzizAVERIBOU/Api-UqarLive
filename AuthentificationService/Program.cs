@@ -30,7 +30,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 // Configurer le DbContext avec la chaîne de connexion complète
 builder.Services.AddDbContext<AuthentificationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseNpgsql(connectionString));
 
 // Configuration JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
