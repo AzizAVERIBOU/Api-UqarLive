@@ -143,12 +143,7 @@ namespace AuthentificationService.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Inscription] Erreur lors de l'inscription pour {Email}", demande?.Email);
-                return StatusCode(500, new {
-                    message = "Une erreur est survenue lors de l'inscription.",
-                    erreur = ex.Message,
-                    details = ex.InnerException?.Message,
-                    stackTrace = ex.StackTrace
-                });
+                return StatusCode(500, new { message = "Une erreur est survenue lors de l'inscription." });
             }
         }
 
