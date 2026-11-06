@@ -93,8 +93,12 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "5001";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+var environnement = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+if (!string.Equals(environnement, "Testing", StringComparison.OrdinalIgnoreCase))
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5001";
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
 
 var app = builder.Build();
 
@@ -118,6 +122,12 @@ app.MapControllers();
 app.MapGet("/", () => Results.Ok("Auth service up"));
 app.MapGet("/health", () => Results.Ok("Healthy"));
 
-app.Logger.LogInformation("Service d'Authentification démarré sur le port {Port}", port);
+app.Logger.LogInformation(
+    "Service d'Authentification démarré sur le port {Port}",
+    Environment.GetEnvironmentVariable("PORT") ?? "5001");
 
 app.Run();
+
+public partial class Program
+{
+}
