@@ -20,7 +20,11 @@ namespace AuthentificationService.Models.Auth
             var cle = Encoding.ASCII.GetBytes(_configuration["JwtSettings:SecretKey"]);
             var gestionnaireToken = new JwtSecurityTokenHandler();
             
-            var dateExpiration = DateTime.UtcNow.AddHours(1);
+            var dureeMinutes = _configuration.GetValue("JwtSettings:ExpiryInMinutes", 60);
+            if (dureeMinutes <= 0)
+                dureeMinutes = 60;
+
+            var dateExpiration = DateTime.UtcNow.AddMinutes(dureeMinutes);
             
             var descripteurToken = new SecurityTokenDescriptor
             {

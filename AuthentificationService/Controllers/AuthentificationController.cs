@@ -53,6 +53,26 @@ namespace AuthentificationService.Controllers
                 _logger.LogInformation("[Inscription] Début de la méthode pour l'utilisateur {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Début de la méthode pour l'utilisateur {demande.Email}");
 
+                if (string.IsNullOrWhiteSpace(demande.MotDePasse) || demande.MotDePasse.Length < 8)
+                {
+                    return BadRequest(new { message = "Le mot de passe doit contenir au moins 8 caractères." });
+                }
+
+                if (string.IsNullOrWhiteSpace(demande.Telephone))
+                {
+                    return BadRequest(new { message = "Le numéro de téléphone est requis." });
+                }
+
+                if (demande.Adresse == null
+                    || string.IsNullOrWhiteSpace(demande.Adresse.NumeroCivique)
+                    || string.IsNullOrWhiteSpace(demande.Adresse.Rue)
+                    || string.IsNullOrWhiteSpace(demande.Adresse.Ville)
+                    || string.IsNullOrWhiteSpace(demande.Adresse.Province)
+                    || string.IsNullOrWhiteSpace(demande.Adresse.CodePostal))
+                {
+                    return BadRequest(new { message = "L'adresse est requise." });
+                }
+
                 // Vérifier si l'utilisateur existe déjà
                 _logger.LogInformation("[Inscription] Vérification de l'existence de l'utilisateur {Email} ou code permanent {CodePermanent}", demande.Email, demande.CodePermanent);
                 Console.WriteLine($"[Inscription] Vérification de l'existence de l'utilisateur {demande.Email} ou code permanent {demande.CodePermanent}");
@@ -374,6 +394,11 @@ namespace AuthentificationService.Controllers
                     }
                 }
 
+                if (string.IsNullOrWhiteSpace(demande.Telephone))
+                {
+                    return BadRequest(new { message = "Le numéro de téléphone est requis." });
+                }
+
                 // Mettre à jour les informations de base
                 utilisateur.Email = demande.Email;
                 utilisateur.Telephone = demande.Telephone;
@@ -453,6 +478,11 @@ namespace AuthentificationService.Controllers
                 {
                     _logger.LogWarning("[ChangerMotDePasse] Code permanent non trouvé dans le token");
                     return Unauthorized(new { message = "Token invalide" });
+                }
+
+                if (string.IsNullOrWhiteSpace(demande.NouveauMotDePasse) || demande.NouveauMotDePasse.Length < 8)
+                {
+                    return BadRequest(new { message = "Le mot de passe doit contenir au moins 8 caractères." });
                 }
 
                 // Vérifier que les mots de passe correspondent

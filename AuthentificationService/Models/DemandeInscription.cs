@@ -14,7 +14,7 @@ namespace AuthentificationService.Models
         public string Faculte { get; set; }
         public int AnneeDebut { get; set; }
         public int AnneeFin { get; set; }
-        public double Telephone { get; set; }
+        public string Telephone { get; set; }
         public RoleUtilisateur Role { get; set; }
         public Adresse Adresse { get; set; }
     }
