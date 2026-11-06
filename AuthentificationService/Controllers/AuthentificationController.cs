@@ -53,6 +53,26 @@ namespace AuthentificationService.Controllers
                 _logger.LogInformation("[Inscription] Début de la méthode pour l'utilisateur {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Début de la méthode pour l'utilisateur {demande.Email}");
 
+                if (string.IsNullOrWhiteSpace(demande.MotDePasse) || demande.MotDePasse.Length < 8)
+                {
+                    return BadRequest(new { message = "Le mot de passe doit contenir au moins 8 caractères." });
+                }
+
+                if (string.IsNullOrWhiteSpace(demande.Telephone))
+                {
+                    return BadRequest(new { message = "Le numéro de téléphone est requis." });
+                }
+
+                if (demande.Adresse == null
+                    || string.IsNullOrWhiteSpace(demande.Adresse.NumeroCivique)
+                    || string.IsNullOrWhiteSpace(demande.Adresse.Rue)
+                    || string.IsNullOrWhiteSpace(demande.Adresse.Ville)
+                    || string.IsNullOrWhiteSpace(demande.Adresse.Province)
+                    || string.IsNullOrWhiteSpace(demande.Adresse.CodePostal))
+                {
+                    return BadRequest(new { message = "L'adresse est requise." });
+                }
+
                 // Vérifier si l'utilisateur existe déjà
                 _logger.LogInformation("[Inscription] Vérification de l'existence de l'utilisateur {Email} ou code permanent {CodePermanent}", demande.Email, demande.CodePermanent);
                 Console.WriteLine($"[Inscription] Vérification de l'existence de l'utilisateur {demande.Email} ou code permanent {demande.CodePermanent}");
@@ -79,14 +99,16 @@ namespace AuthentificationService.Controllers
                     Prenom = demande.Prenom,
                     MotDePasseHash = motDePasseHash,
                     MotDePasseSalt = motDePasseSalt,
-                    Role = demande.Role,
+                    Role = RoleUtilisateur.Etudiant,
                     Programme = demande.Programme,
                     Faculte = demande.Faculte,
                     AnneeDebut = demande.AnneeDebut,
                     AnneeFin = demande.AnneeFin,
                     Telephone = demande.Telephone,
                     DateInscription = DateTime.UtcNow,
-                    DerniereConnexion = DateTime.UtcNow
+                    DateCreation = DateTime.UtcNow,
+                    DerniereConnexion = DateTime.UtcNow,
+                    EstActif = true
                 };
 
                 // Créer l'adresse
@@ -160,9 +182,12 @@ namespace AuthentificationService.Controllers
                     return Unauthorized(new { message = "Code permanent ou mot de passe incorrect" });
                 }
 
-                // Mettre à jour la dernière connexion et activer l'utilisateur
+                if (!utilisateur.EstActif)
+                {
+                    return Unauthorized(new { message = "Ce compte est désactivé" });
+                }
+
                 utilisateur.DerniereConnexion = DateTime.UtcNow;
-                utilisateur.EstActif = true;
                 await _context.SaveChangesAsync();
 
                 // Envoyer une notification de connexion 
@@ -240,72 +265,22 @@ namespace AuthentificationService.Controllers
         }
 
         [HttpPost("Deconnexion")]
-        public async Task<IActionResult> Deconnexion([FromBody] string? codePermanent = null)
+        [Authorize]
+        public IActionResult Deconnexion()
         {
-            try
+            var codePermanent = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(codePermanent))
             {
-                _logger.LogInformation("[Deconnexion] Début de la méthode");
-                
-                string utilisateurCodePermanent = codePermanent;
-
-                // Si aucun code permanent n'est fourni, essayer de le récupérer depuis le token
-                if (string.IsNullOrEmpty(utilisateurCodePermanent))
-                {
-                    // Vérifier si l'utilisateur est authentifié via token
-                    if (User.Identity?.IsAuthenticated == true)
-                    {
-                        utilisateurCodePermanent = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                        if (string.IsNullOrEmpty(utilisateurCodePermanent))
-                        {
-                            _logger.LogWarning("[Deconnexion] Code permanent non trouvé dans le token");
-                            return Unauthorized(new { message = "Token invalide ou code permanent manquant" });
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning("[Deconnexion] Aucun code permanent fourni et utilisateur non authentifié");
-                        return BadRequest(new { message = "Code permanent requis ou token d'authentification valide" });
-                    }
-                }
-
-                // Récupérer l'utilisateur
-                var utilisateur = await _context.Utilisateurs
-                    .FirstOrDefaultAsync(u => u.CodePermanent == utilisateurCodePermanent);
-
-                if (utilisateur == null)
-                {
-                    _logger.LogWarning("[Deconnexion] Utilisateur non trouvé : {CodePermanent}", utilisateurCodePermanent);
-                    return NotFound(new { message = "Utilisateur non trouvé" });
-                }
-
-                // Vérifier si l'utilisateur est déjà déconnecté
-                if (!utilisateur.EstActif)
-                {
-                    _logger.LogInformation("[Deconnexion] Utilisateur déjà déconnecté : {CodePermanent}", utilisateurCodePermanent);
-                    return Ok(new { 
-                        message = "Utilisateur déjà déconnecté",
-                        codePermanent = utilisateurCodePermanent,
-                        estConnecte = false
-                    });
-                }
-
-                // Désactiver l'utilisateur et mettre à jour la dernière connexion
-                utilisateur.EstActif = false;
-                utilisateur.DerniereConnexion = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("[Deconnexion] Déconnexion réussie pour {CodePermanent}", utilisateurCodePermanent);
-                return Ok(new { 
-                    message = "Déconnexion réussie",
-                    codePermanent = utilisateurCodePermanent,
-                    estConnecte = false
-                });
+                _logger.LogWarning("[Deconnexion] Code permanent non trouvé dans le token");
+                return Unauthorized(new { message = "Token invalide" });
             }
-            catch (Exception ex)
+
+            _logger.LogInformation("[Deconnexion] Jeton à oublier pour {CodePermanent}", codePermanent);
+            return Ok(new
             {
-                _logger.LogError(ex, "[Deconnexion] Erreur lors de la déconnexion");
-                return StatusCode(500, new { message = "Une erreur est survenue lors de la déconnexion" });
-            }
+                message = "Déconnexion réussie. Le jeton doit être oublié par le client.",
+                codePermanent
+            });
         }
 
         [HttpGet("ObtenirProfilUtilisateur")]
@@ -419,6 +394,11 @@ namespace AuthentificationService.Controllers
                     }
                 }
 
+                if (string.IsNullOrWhiteSpace(demande.Telephone))
+                {
+                    return BadRequest(new { message = "Le numéro de téléphone est requis." });
+                }
+
                 // Mettre à jour les informations de base
                 utilisateur.Email = demande.Email;
                 utilisateur.Telephone = demande.Telephone;
@@ -500,6 +480,11 @@ namespace AuthentificationService.Controllers
                     return Unauthorized(new { message = "Token invalide" });
                 }
 
+                if (string.IsNullOrWhiteSpace(demande.NouveauMotDePasse) || demande.NouveauMotDePasse.Length < 8)
+                {
+                    return BadRequest(new { message = "Le mot de passe doit contenir au moins 8 caractères." });
+                }
+
                 // Vérifier que les mots de passe correspondent
                 if (demande.NouveauMotDePasse != demande.ConfirmationMotDePasse)
                 {
@@ -563,56 +548,40 @@ namespace AuthentificationService.Controllers
                 var utilisateur = await _context.Utilisateurs
                     .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
 
-                if (utilisateur == null)
+                if (utilisateur == null || !utilisateur.EstActif)
                 {
-                    _logger.LogWarning("[VerifierUtilisateur] Utilisateur non trouvé : {CodePermanent}", codePermanent);
-                    return NotFound(new { 
+                    _logger.LogWarning("[VerifierUtilisateur] Utilisateur introuvable ou inactif : {CodePermanent}", codePermanent);
+                    return NotFound(new
+                    {
                         message = $"Utilisateur avec le code permanent {codePermanent} non trouvé",
-                        codePermanent = codePermanent,
-                        existe = false,
-                        estConnecte = false
+                        codePermanent,
+                        existe = false
                     });
                 }
 
-                // Vérifier si l'utilisateur est connecté (actif)
-                if (!utilisateur.EstActif)
-                {
-                    _logger.LogWarning("[VerifierUtilisateur] Utilisateur non connecté : {CodePermanent}", codePermanent);
-                    return BadRequest(new { 
-                        message = $"L'utilisateur {codePermanent} n'est pas connecté",
-                        codePermanent = codePermanent,
-                        existe = true,
-                        estConnecte = false,
-                        derniereConnexion = utilisateur.DerniereConnexion
-                    });
-                }
-
-                // L'utilisateur existe et est connecté
                 var reponse = new
                 {
-                    message = "Utilisateur connecté et autorisé",
+                    message = "Utilisateur actif",
                     codePermanent = utilisateur.CodePermanent,
                     nom = utilisateur.Nom,
                     prenom = utilisateur.Prenom,
                     email = utilisateur.Email,
                     role = utilisateur.Role,
-                    existe = true,
-                    estConnecte = true,
-                    derniereConnexion = utilisateur.DerniereConnexion
+                    existe = true
                 };
 
-                _logger.LogInformation("[VerifierUtilisateur] Utilisateur connecté et autorisé : {CodePermanent}", codePermanent);
+                _logger.LogInformation("[VerifierUtilisateur] Utilisateur actif : {CodePermanent}", codePermanent);
 
                 return Ok(reponse);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[VerifierUtilisateur] Erreur lors de la vérification de l'utilisateur {CodePermanent}", codePermanent);
-                return StatusCode(500, new { 
+                return StatusCode(500, new
+                {
                     message = "Une erreur est survenue lors de la vérification de l'utilisateur",
-                    codePermanent = codePermanent,
-                    existe = false,
-                    estConnecte = false
+                    codePermanent,
+                    existe = false
                 });
             }
         }

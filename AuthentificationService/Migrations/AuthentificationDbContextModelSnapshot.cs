@@ -85,8 +85,10 @@ namespace AuthentificationService.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<double>("Telephone")
-                        .HasColumnType("double precision");
+                    b.Property<string>("Telephone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.HasKey("CodePermanent");
 

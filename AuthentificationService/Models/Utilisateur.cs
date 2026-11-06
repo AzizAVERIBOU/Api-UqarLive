@@ -33,7 +33,7 @@ namespace AuthentificationService.Models
         public string Faculte { get; set; }
         public int AnneeDebut { get; set; }
         public int AnneeFin { get; set; }
-        public double Telephone { get; set; }
+        public string Telephone { get; set; }
         public DateTime DateInscription { get; set; }
         public DateTime DerniereConnexion { get; set; }
         public DateTime DateCreation { get; set; }
