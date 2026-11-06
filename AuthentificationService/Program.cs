@@ -33,8 +33,15 @@ builder.Services.AddDbContext<AuthentificationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Configuration JWT
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]);
+const string cleJwtExemple = "votre_cle_secrete_tres_longue_et_complexe_ici";
+var cleJwt = builder.Configuration["JwtSettings:SecretKey"];
+if (string.IsNullOrWhiteSpace(cleJwt) || cleJwt == cleJwtExemple)
+{
+    throw new InvalidOperationException(
+        "JwtSettings:SecretKey est absente ou encore égale à la valeur d'exemple. Définissez la variable d'environnement JwtSettings__SecretKey.");
+}
+
+var key = Encoding.ASCII.GetBytes(cleJwt);
 
 builder.Services.AddAuthentication(options =>
 {
