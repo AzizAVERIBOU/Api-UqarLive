@@ -7,7 +7,9 @@
 
 Backend **microservices** pour l’application **UQAR Live** : APIs REST en **ASP.NET Core** (.NET 8), routage centralisé via **Ocelot**, persistance **PostgreSQL** avec **Entity Framework Core** et **Npgsql**.
 
-Le dépôt vérifie la compilation avec **GitHub Actions**. Il n’y a pas de déploiement automatique pour le moment.
+Le dépôt compile la solution et exécute les tests d’authentification avec **GitHub Actions**. Il n’y a pas de déploiement automatique.
+
+Le service d’authentification est en ligne : [https://api-uqarlive.onrender.com](https://api-uqarlive.onrender.com). Les autres services ne sont pas encore publiés.
 
 **Dépôt :** [https://github.com/AzizAVERIBOU/Api-UqarLive](https://github.com/AzizAVERIBOU/Api-UqarLive)
 
@@ -37,7 +39,7 @@ Le dépôt vérifie la compilation avec **GitHub Actions**. Il n’y a pas de d�
 | Composant | Rôle | Port local (exemple) |
 |-----------|------|-------------------------|
 | **Gateway** | Point d’entrée unique, **Ocelot** (`ocelot.json`), Swagger UI | `5000` (ou `PORT`) |
-| **AuthentificationService** | Comptes, JWT (`JwtBearer`) | `5001` |
+| **AuthentificationService** | Comptes, JWT (`JwtBearer`). Public : [api-uqarlive.onrender.com](https://api-uqarlive.onrender.com) | `5001` |
 | **AssociationService** | Associations, adhésions, événements | `5002` |
 | **MarketService** | Marketplace | `5003` |
 | **BibliothequeService** | Bibliothèque / salles | `5004` |
@@ -45,6 +47,8 @@ Le dépôt vérifie la compilation avec **GitHub Actions**. Il n’y a pas de d�
 | **RessourcesPartagees** | Bibliothèque de classes partagée | — |
 
 Chaque service métier a son propre **DbContext**. Tous lisent `ConnectionStrings:DefaultConnection` et peuvent partager une même base PostgreSQL.
+
+La passerelle envoie `/auth/…` vers `https://api-uqarlive.onrender.com/api/Authentification/…`. Association, Marché et Bibliothèque appellent cette même adresse pour `VerifierUtilisateur`.
 
 ---
 
@@ -57,7 +61,7 @@ Chaque service métier a son propre **DbContext**. Tous lisent `ConnectionString
 - **APIs :** **Swashbuckle.AspNetCore 10.1.7** sur les services web ; **Microsoft.AspNetCore.OpenApi 8.0.22** là où il est référencé.
 - **Auth :** **Microsoft.AspNetCore.Authentication.JwtBearer 8.0.22**.
 - **JSON :** **Newtonsoft.Json 13.0.4** (là où le package est présent) et **System.Text.Json** (ASP.NET Core).
-- **CI :** GitHub Actions, build Release de `API-Backend.sln`. Pas de déploiement dans le workflow.
+- **CI :** GitHub Actions, build Release de `API-Backend.sln`, puis les tests d’authentification. Pas de déploiement dans le workflow.
 
 > Les versions **EF Core 10** et **ASP.NET Core 10** sur NuGet ciblent **.NET 10** ; ce dépôt reste sur **.NET 8** avec les versions **compatibles net8.0**.
 
@@ -70,6 +74,7 @@ API-Backend/
 ├── API-Backend.sln
 ├── Gateway/                 # Ocelot, Swagger
 ├── AuthentificationService/
+├── AuthentificationService.Tests/
 ├── AssociationService/
 ├── MarketService/
 ├── BibliothequeService/
@@ -107,9 +112,20 @@ dotnet run --project Gateway
 dotnet run --project AuthentificationService
 ```
 
-Les ports viennent de `launchSettings.json` et de `UseUrls` dans `Program.cs`. La gateway écoute `PORT`, sinon `5000`.
+Les ports viennent de `launchSettings.json` et de `UseUrls` dans `Program.cs`. La gateway écoute `PORT`, sinon `5000`. Le service d’authentification écoute `PORT`, sinon `5001`.
 
-**Santé :** le service d’authentification expose `/` et `/health`.
+**Service d’authentification en ligne**
+
+| Usage | Adresse |
+|---|---|
+| Santé | https://api-uqarlive.onrender.com/health |
+| Swagger | https://api-uqarlive.onrender.com/swagger |
+| Inscription | `POST /api/Authentification/Inscription` |
+| Connexion | `POST /api/Authentification/Connexion` |
+| Profil | `GET /api/Authentification/ObtenirProfilUtilisateur` |
+| Vérifier un code | `GET /api/Authentification/VerifierUtilisateur/{codePermanent}` |
+
+L’instance gratuite s’endort : le premier appel peut prendre près d’une minute.
 
 ---
 
@@ -129,11 +145,21 @@ Pour un PostgreSQL Render, utilisez l’hôte interne et `SSL Mode=Require;Trust
 
 ### JWT (AuthentificationService)
 
-Configurez la section **JwtSettings**, en particulier la clé secrète, via les variables d’environnement ou les secrets utilisateur.
+La clé secrète se pose dans `JwtSettings__SecretKey`. La durée du jeton vient de `JwtSettings:ExpiryInMinutes` (60 dans `appsettings.json`). Ne commitez pas la clé.
+
+### Appels vers l’authentification
+
+Association, Marché et Bibliothèque lisent `Services:AuthService`. La valeur versionnée est `https://api-uqarlive.onrender.com/`. Pour un service d’authentification lancé sur la machine :
+
+```text
+Services__AuthService=http://localhost:5001/
+```
+
+Le chemin appelé est `api/Authentification/VerifierUtilisateur/{codePermanent}`.
 
 ### Gateway (Ocelot)
 
-`Gateway/ocelot.json` décrit les chemins amont et les hôtes aval. Adaptez les hôtes à l’environnement (local ou hébergé). Les préfixes publics sont `/auth/…`, `/association/…`, `/bibliotheque/…`, `/market/…` et `/cafetaria/…`.
+`Gateway/ocelot.json` décrit les chemins amont et les hôtes aval. La route `/auth/{everything}` vise `api-uqarlive.onrender.com`, port 443. Les préfixes publics sont `/auth/…`, `/association/…`, `/bibliotheque/…`, `/market/…` et `/cafetaria/…`. Les quatre autres hôtes ne sont pas encore publiés.
 
 ---
 
@@ -143,6 +169,7 @@ Chaque service a un Dockerfile. Le contexte de build est la **racine du dépôt*
 
 ```bash
 docker build -t uqarlive-gateway -f Gateway/Dockerfile .
+docker build -t uqarlive-auth -f AuthentificationService/Dockerfile .
 ```
 
 Il n’y a pas de `docker-compose` à la racine.
@@ -158,7 +185,7 @@ Deux branches long terme :
 
 Chaque tâche part de `develop` sur une branche `feature/...`, puis y revient par pull request. `main` est mise à jour depuis `develop`, aussi par pull request.
 
-Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compile `API-Backend.sln` en Release avec le SDK .NET 8. Il tourne sur chaque push vers `main` ou `develop`, sur chaque pull request vers l'une de ces branches, et à la demande depuis l'onglet Actions. Un nouveau push sur la même référence annule le run encore en cours. Les paquets NuGet sont mis en cache.
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compile `API-Backend.sln` en Release avec le SDK .NET 8, puis lance `AuthentificationService.Tests`. Ces tests démarrent un PostgreSQL 18 jetable. Il tourne sur chaque push vers `main` ou `develop`, sur chaque pull request vers l'une de ces branches, et à la demande depuis l'onglet Actions. Un nouveau push sur la même référence annule le run encore en cours. Les paquets NuGet sont mis en cache.
 
 Aucun job ne publie ni ne déploie les services. Le déploiement se fera plus tard, en dehors de ce workflow.
 
@@ -166,21 +193,17 @@ Aucun job ne publie ni ne déploie les services. Le déploiement se fera plus ta
 
 ## Documentation des API
 
-Swagger UI est activé sur les services qui configurent Swashbuckle. Le détail des chemins et des corps de requête est dans le Swagger du service concerné.
+Swagger UI est activé sur les services qui configurent Swashbuckle. Le contrat du service d’authentification est publié ici : [https://api-uqarlive.onrender.com/swagger](https://api-uqarlive.onrender.com/swagger).
+
+La passerelle agrège ce document depuis `https://api-uqarlive.onrender.com/swagger/v1/swagger.json`.
 
 ---
 
 ## Migrations Entity Framework
 
-Aucune migration n’est versionnée dans le dépôt pour le moment. Après avoir configuré `ConnectionStrings__DefaultConnection` vers PostgreSQL :
+Les migrations de l’authentification sont versionnées dans `AuthentificationService/Migrations`. Le service les applique au démarrage avec `Database.Migrate()`.
 
-```bash
-dotnet tool install --global dotnet-ef
-dotnet ef migrations add Initial --project AuthentificationService
-dotnet ef database update --project AuthentificationService
-```
-
-Répétez en remplaçant le nom du projet pour Association, Market, Bibliothèque et Cafétéria.
+Les autres services n’ont pas encore de migrations versionnées.
 
 ---
 

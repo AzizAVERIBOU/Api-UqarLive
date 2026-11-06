@@ -6,7 +6,7 @@
       "DownstreamPathTemplate": "/api/Authentification/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
-        { "Host": "uqarliveauth-czhfbpapdfcxhuht.canadacentral-01.azurewebsites.net", "Port": 443 }
+        { "Host": "api-uqarlive.onrender.com", "Port": 443 }
       ]
     },
     {

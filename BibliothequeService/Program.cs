@@ -26,9 +26,15 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure HTTP client for inter-service communication
+var authService = builder.Configuration["Services:AuthService"];
+if (string.IsNullOrWhiteSpace(authService))
+{
+    authService = "https://api-uqarlive.onrender.com";
+}
+
 builder.Services.AddHttpClient("AuthService", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5001/");
+    client.BaseAddress = new Uri(authService.TrimEnd('/') + "/");
 });
 
 var app = builder.Build();
