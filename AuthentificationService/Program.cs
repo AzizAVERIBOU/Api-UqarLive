@@ -98,6 +98,12 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AuthentificationDbContext>();
+    db.Database.Migrate();
+}
+
 // Swagger toujours activé (utile en conteneur)
 app.UseSwagger();
 app.UseSwaggerUI();
