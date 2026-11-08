@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace BibliothequeService.Models
 {
@@ -37,6 +38,7 @@ namespace BibliothequeService.Models
         [MaxLength(500)]
         public string? Commentaire { get; set; }
 
+        [JsonIgnore]
         public Salle Salle { get; set; } = null!;
     }
 }

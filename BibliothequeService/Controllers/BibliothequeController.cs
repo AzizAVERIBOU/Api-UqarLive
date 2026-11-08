@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using BibliothequeService.Data;
 using BibliothequeService.Models;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Npgsql;
 
 namespace BibliothequeService.Controllers
 {
@@ -59,8 +60,19 @@ namespace BibliothequeService.Controllers
                 return BadRequest(ModelState);
             }
 
+            if (await NomDeSallePrisAsync(salle.Nom))
+            {
+                return BadRequest("Une salle porte déjà ce nom");
+            }
+
+            salle.Id = 0;
+            salle.DateCreation = DateTime.UtcNow;
             _context.Salles.Add(salle);
-            await _context.SaveChangesAsync();
+            var doublon = await EnregistrerSalleAsync();
+            if (doublon != null)
+            {
+                return doublon;
+            }
 
             return CreatedAtAction(nameof(GetSalle), new { id = salle.Id }, salle);
         }
@@ -74,10 +86,25 @@ namespace BibliothequeService.Controllers
                 return BadRequest();
             }
 
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var existing = await _context.Salles.FindAsync(id);
             if (existing == null)
             {
                 return NotFound();
+            }
+
+            if (await NomDeSallePrisAsync(salle.Nom, id))
+            {
+                return BadRequest("Une salle porte déjà ce nom");
+            }
+
+            if (!salle.EstActive && await SalleOccupeeAsync(id))
+            {
+                return BadRequest("Impossible de désactiver une salle qui a une réservation en attente, confirmée ou en cours");
             }
 
             existing.Nom = salle.Nom;
@@ -93,16 +120,18 @@ namespace BibliothequeService.Controllers
             {
                 await _context.SaveChangesAsync();
             }
+            catch (DbUpdateException ex) when (EstViolationUnique(ex))
+            {
+                return BadRequest("Une salle porte déjà ce nom");
+            }
             catch (DbUpdateConcurrencyException)
             {
                 if (!SalleExists(id))
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                throw;
             }
 
             return NoContent();
@@ -118,15 +147,9 @@ namespace BibliothequeService.Controllers
                 return NotFound();
             }
 
-            // Vérifier s'il y a des réservations actives
-            var reservationsActives = await _context.Reservations
-                .AnyAsync(r => r.SalleId == id && 
-                              (r.Statut == StatutReservation.Confirmee || 
-                               r.Statut == StatutReservation.EnCours));
-
-            if (reservationsActives)
+            if (await SalleOccupeeAsync(id))
             {
-                return BadRequest("Impossible de supprimer une salle avec des réservations actives");
+                return BadRequest("Impossible de désactiver une salle qui a une réservation en attente, confirmée ou en cours");
             }
 
             salle.EstActive = false;
@@ -139,9 +162,7 @@ namespace BibliothequeService.Controllers
         [HttpGet("reservations")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetReservations()
         {
-            return await _context.Reservations
-                .Include(r => r.Salle)
-                .ToListAsync();
+            return await _context.Reservations.ToListAsync();
         }
 
         // GET: api/bibliotheque/reservations/{id}
@@ -149,7 +170,6 @@ namespace BibliothequeService.Controllers
         public async Task<ActionResult<Reservation>> GetReservation(int id)
         {
             var reservation = await _context.Reservations
-                .Include(r => r.Salle)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (reservation == null)
@@ -169,62 +189,39 @@ namespace BibliothequeService.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Vérifier que l'utilisateur existe dans le service d'authentification
-            try
+            var compte = await CompteActifAsync(reservation.CodePermanentReservateur);
+            if (compte != null)
             {
-                var httpClient = _httpClientFactory.CreateClient("AuthService");
-                var response = await httpClient.GetAsync($"api/Authentification/VerifierUtilisateur/{reservation.CodePermanentReservateur}");
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    return BadRequest("Code permanent invalide ou utilisateur non trouvé");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la vérification de l'utilisateur");
-                return StatusCode(500, "Erreur lors de la vérification de l'utilisateur");
+                return compte;
             }
 
-            // Vérifier que la salle existe et est disponible
             var salle = await _context.Salles.FindAsync(reservation.SalleId);
-            if (salle == null || !salle.EstActive)
+            var salleRefusee = SalleReservable(salle);
+            if (salleRefusee != null)
             {
-                return BadRequest("Salle non trouvée ou inactive");
+                return salleRefusee;
             }
 
-            if (!salle.EstDisponible)
+            var creneau = ValiderCreneau(reservation.HeureDebut, reservation.HeureFin, reservation.DateReservation);
+            if (creneau != null)
             {
-                return BadRequest("Salle non disponible");
+                return creneau;
             }
 
-            // Vérifier que l'heure de fin est après l'heure de début
-            if (reservation.HeureFin <= reservation.HeureDebut)
+            var participants = ValiderParticipants(reservation.NombreParticipants, salle!.Capacite);
+            if (participants != null)
             {
-                return BadRequest("L'heure de fin doit être après l'heure de début");
+                return participants;
             }
 
-            // Vérifier que la date de réservation n'est pas dans le passé
-            if (reservation.DateReservation < DateOnly.FromDateTime(DateTime.Today))
-            {
-                return BadRequest("Impossible de réserver pour une date passée");
-            }
-
-            // Vérifier les conflits de réservation
-            var conflit = await _context.Reservations
-                .AnyAsync(r => r.SalleId == reservation.SalleId &&
-                              r.DateReservation == reservation.DateReservation &&
-                              r.Statut != StatutReservation.Annulee &&
-                              r.Statut != StatutReservation.Terminee &&
-                              ((r.HeureDebut <= reservation.HeureDebut && r.HeureFin > reservation.HeureDebut) ||
-                               (r.HeureDebut < reservation.HeureFin && r.HeureFin >= reservation.HeureFin) ||
-                               (r.HeureDebut >= reservation.HeureDebut && r.HeureFin <= reservation.HeureFin)));
-
-            if (conflit)
+            if (await CreneauOccupeAsync(reservation.SalleId, reservation.DateReservation, reservation.HeureDebut, reservation.HeureFin))
             {
                 return BadRequest("Conflit de réservation pour cette période");
             }
 
+            reservation.Id = 0;
+            reservation.Statut = StatutReservation.EnAttente;
+            reservation.DateCreation = DateTime.UtcNow;
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
 
@@ -240,10 +237,46 @@ namespace BibliothequeService.Controllers
                 return BadRequest();
             }
 
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var existing = await _context.Reservations.FindAsync(id);
             if (existing == null)
             {
                 return NotFound();
+            }
+
+            if (reservation.HeureFin <= reservation.HeureDebut)
+            {
+                return BadRequest("L'heure de fin doit être après l'heure de début");
+            }
+
+            if (OccupeLeCreneau(reservation.Statut))
+            {
+                var salle = await _context.Salles.FindAsync(existing.SalleId);
+                var salleRefusee = SalleReservable(salle);
+                if (salleRefusee != null)
+                {
+                    return salleRefusee;
+                }
+
+                if (reservation.DateReservation < AujourdhuiQuebec())
+                {
+                    return BadRequest("Impossible de réserver pour une date passée");
+                }
+
+                var participants = ValiderParticipants(reservation.NombreParticipants, salle!.Capacite);
+                if (participants != null)
+                {
+                    return participants;
+                }
+
+                if (await CreneauOccupeAsync(existing.SalleId, reservation.DateReservation, reservation.HeureDebut, reservation.HeureFin, existing.Id))
+                {
+                    return BadRequest("Conflit de réservation pour cette période");
+                }
             }
 
             existing.TitreReservation = reservation.TitreReservation;
@@ -265,10 +298,8 @@ namespace BibliothequeService.Controllers
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                throw;
             }
 
             return NoContent();
@@ -316,22 +347,18 @@ namespace BibliothequeService.Controllers
             // Filtrer par disponibilité si des paramètres sont spécifiés
             if (date.HasValue && heureDebut.HasValue && heureFin.HasValue)
             {
+                if (heureFin.Value <= heureDebut.Value)
+                {
+                    return BadRequest("L'heure de fin doit être après l'heure de début");
+                }
+
                 var jour = DateOnly.FromDateTime(date.Value);
                 var sallesDisponibles = new List<Salle>();
-                foreach (var salle in salles)
+                foreach (var salleDisponible in salles)
                 {
-                    var conflit = await _context.Reservations
-                        .AnyAsync(r => r.SalleId == salle.Id &&
-                                      r.DateReservation == jour &&
-                                      r.Statut != StatutReservation.Annulee &&
-                                      r.Statut != StatutReservation.Terminee &&
-                                      ((r.HeureDebut <= heureDebut.Value && r.HeureFin > heureDebut.Value) ||
-                                       (r.HeureDebut < heureFin.Value && r.HeureFin >= heureFin.Value) ||
-                                       (r.HeureDebut >= heureDebut.Value && r.HeureFin <= heureFin.Value)));
-
-                    if (!conflit)
+                    if (!await CreneauOccupeAsync(salleDisponible.Id, jour, heureDebut.Value, heureFin.Value))
                     {
-                        sallesDisponibles.Add(salle);
+                        sallesDisponibles.Add(salleDisponible);
                     }
                 }
                 return sallesDisponibles;
@@ -391,6 +418,136 @@ namespace BibliothequeService.Controllers
                 HeureReservation.VingtDeuxHeures => "22:00",
                 _ => "00:00"
             };
+        }
+
+        private async Task<ActionResult?> CompteActifAsync(string codePermanent)
+        {
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient("AuthService");
+                var response = await httpClient.GetAsync($"api/Authentification/VerifierUtilisateur/{codePermanent}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    return BadRequest("Code permanent invalide ou utilisateur non trouvé");
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la vérification de l'utilisateur");
+                return StatusCode(500, "Erreur lors de la vérification de l'utilisateur");
+            }
+        }
+
+        private ActionResult? SalleReservable(Salle? salle)
+        {
+            if (salle == null || !salle.EstActive)
+            {
+                return BadRequest("Salle non trouvée ou inactive");
+            }
+
+            if (!salle.EstDisponible)
+            {
+                return BadRequest("Salle non disponible");
+            }
+
+            return null;
+        }
+
+        private ActionResult? ValiderCreneau(HeureReservation debut, HeureReservation fin, DateOnly date)
+        {
+            if (fin <= debut)
+            {
+                return BadRequest("L'heure de fin doit être après l'heure de début");
+            }
+
+            if (date < AujourdhuiQuebec())
+            {
+                return BadRequest("Impossible de réserver pour une date passée");
+            }
+
+            return null;
+        }
+
+        private ActionResult? ValiderParticipants(int? nombre, int capacite)
+        {
+            if (nombre is int valeur && valeur > capacite)
+            {
+                return BadRequest("Le nombre de participants dépasse la capacité de la salle");
+            }
+
+            return null;
+        }
+
+        private Task<bool> CreneauOccupeAsync(
+            int salleId,
+            DateOnly date,
+            HeureReservation debut,
+            HeureReservation fin,
+            int? reservationIgnoree = null)
+        {
+            return _context.Reservations.AnyAsync(r =>
+                r.SalleId == salleId
+                && r.DateReservation == date
+                && (reservationIgnoree == null || r.Id != reservationIgnoree)
+                && r.Statut != StatutReservation.Annulee
+                && r.Statut != StatutReservation.Terminee
+                && r.HeureDebut < fin
+                && debut < r.HeureFin);
+        }
+
+        private Task<bool> SalleOccupeeAsync(int salleId)
+        {
+            return _context.Reservations.AnyAsync(r =>
+                r.SalleId == salleId
+                && r.Statut != StatutReservation.Annulee
+                && r.Statut != StatutReservation.Terminee);
+        }
+
+        private Task<bool> NomDeSallePrisAsync(string nom, int? salleIgnoree = null)
+        {
+            return _context.Salles.AnyAsync(s =>
+                s.Nom == nom && (salleIgnoree == null || s.Id != salleIgnoree));
+        }
+
+        private async Task<ActionResult?> EnregistrerSalleAsync()
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+                return null;
+            }
+            catch (DbUpdateException ex) when (EstViolationUnique(ex))
+            {
+                return BadRequest("Une salle porte déjà ce nom");
+            }
+        }
+
+        private static bool OccupeLeCreneau(StatutReservation statut)
+        {
+            return statut != StatutReservation.Annulee && statut != StatutReservation.Terminee;
+        }
+
+        private static bool EstViolationUnique(DbUpdateException ex)
+        {
+            return ex.InnerException is PostgresException postgres
+                && postgres.SqlState == PostgresErrorCodes.UniqueViolation;
+        }
+
+        private static DateOnly AujourdhuiQuebec()
+        {
+            TimeZoneInfo zone;
+            try
+            {
+                zone = TimeZoneInfo.FindSystemTimeZoneById("America/Toronto");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                zone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+            }
+
+            return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zone));
         }
 
         private bool SalleExists(int id)
