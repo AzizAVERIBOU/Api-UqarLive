@@ -72,7 +72,8 @@ La passerelle envoie `/auth/…` vers `https://api-uqarlive.onrender.com/api/Aut
 ```
 API-Backend/
 ├── API-Backend.sln
-├── Gateway/                 # Ocelot, Swagger
+├── Gateway/                 # Ocelot, Swagger centralisé
+├── Gateway.Tests/
 ├── AuthentificationService/
 ├── AuthentificationService.Tests/
 ├── AssociationService/
@@ -159,7 +160,7 @@ Le chemin appelé est `api/Authentification/VerifierUtilisateur/{codePermanent}`
 
 ### Gateway (Ocelot)
 
-`Gateway/ocelot.json` décrit les chemins amont et les hôtes aval. La route `/auth/{everything}` vise `api-uqarlive.onrender.com`, port 443. Les préfixes publics sont `/auth/…`, `/association/…`, `/bibliotheque/…`, `/market/…` et `/cafetaria/…`. Les quatre autres hôtes ne sont pas encore publiés.
+`Gateway/ocelot.json` ne publie pour l'instant que `/auth/{everything}`, vers `api-uqarlive.onrender.com`. Les autres services ne sont pas routés tant qu'ils ne sont pas en ligne.
 
 ---
 
@@ -193,9 +194,9 @@ Aucun job ne publie ni ne déploie les services. Le déploiement se fera plus ta
 
 ## Documentation des API
 
-Swagger UI est activé sur les services qui configurent Swashbuckle. Le contrat du service d’authentification est publié ici : [https://api-uqarlive.onrender.com/swagger](https://api-uqarlive.onrender.com/swagger).
+Le service d’authentification publie son contrat sur [https://api-uqarlive.onrender.com/swagger](https://api-uqarlive.onrender.com/swagger).
 
-La passerelle agrège ce document depuis `https://api-uqarlive.onrender.com/swagger/v1/swagger.json`.
+La passerelle reprend ce contrat dans sa propre page [http://localhost:5000/swagger](http://localhost:5000/swagger). Les chemins y sont ceux de la passerelle : `/api/Authentification/Connexion` devient `/auth/Connexion`. Un service absent est ignoré, la page reste ouverte.
 
 ---
 
