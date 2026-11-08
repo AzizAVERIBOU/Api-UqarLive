@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using BibliothequeService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,7 +10,9 @@ builder.Environment.EnvironmentName = "Development";
 
 // Add services to the container.
 builder.Services.AddDbContext<BibliothequeDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    BibliothequeDbContext.UtiliserPostgres(
+        options,
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

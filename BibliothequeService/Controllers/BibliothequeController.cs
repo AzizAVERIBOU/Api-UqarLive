@@ -205,7 +205,7 @@ namespace BibliothequeService.Controllers
             }
 
             // Vérifier que la date de réservation n'est pas dans le passé
-            if (reservation.DateReservation.Date < DateTime.Today)
+            if (reservation.DateReservation < DateOnly.FromDateTime(DateTime.Today))
             {
                 return BadRequest("Impossible de réserver pour une date passée");
             }
@@ -213,7 +213,7 @@ namespace BibliothequeService.Controllers
             // Vérifier les conflits de réservation
             var conflit = await _context.Reservations
                 .AnyAsync(r => r.SalleId == reservation.SalleId &&
-                              r.DateReservation.Date == reservation.DateReservation.Date &&
+                              r.DateReservation == reservation.DateReservation &&
                               r.Statut != StatutReservation.Annulee &&
                               r.Statut != StatutReservation.Terminee &&
                               ((r.HeureDebut <= reservation.HeureDebut && r.HeureFin > reservation.HeureDebut) ||
@@ -316,12 +316,13 @@ namespace BibliothequeService.Controllers
             // Filtrer par disponibilité si des paramètres sont spécifiés
             if (date.HasValue && heureDebut.HasValue && heureFin.HasValue)
             {
+                var jour = DateOnly.FromDateTime(date.Value);
                 var sallesDisponibles = new List<Salle>();
                 foreach (var salle in salles)
                 {
                     var conflit = await _context.Reservations
                         .AnyAsync(r => r.SalleId == salle.Id &&
-                                      r.DateReservation.Date == date.Value.Date &&
+                                      r.DateReservation == jour &&
                                       r.Statut != StatutReservation.Annulee &&
                                       r.Statut != StatutReservation.Terminee &&
                                       ((r.HeureDebut <= heureDebut.Value && r.HeureFin > heureDebut.Value) ||
