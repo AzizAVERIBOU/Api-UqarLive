@@ -2,9 +2,6 @@
 # Cette image contient uniquement le runtime .NET nécessaire pour exécuter l'application
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-# Exposition des ports pour HTTP (80) et HTTPS (443)
-EXPOSE 80
-EXPOSE 443
 EXPOSE 5000
 
 # Étape 2 : Configuration de l'image de build
