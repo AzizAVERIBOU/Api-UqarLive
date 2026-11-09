@@ -50,6 +50,44 @@ public class DocumentationPasserelleTests
         Assert.Equal("UQAR Live", racine.GetProperty("info").GetProperty("title").GetString());
     }
 
+    [Fact]
+    public async Task Obtenir_PublieLesCheminsSousBiblio()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Routes:0:UpstreamPathTemplate"] = "/biblio/{everything}",
+                ["Routes:0:DownstreamPathTemplate"] = "/api/Bibliotheque/{everything}",
+                ["Routes:0:DownstreamScheme"] = "https",
+                ["Routes:0:DownstreamHostAndPorts:0:Host"] = "uqarlive-bibliotheque.onrender.com",
+                ["Routes:0:DownstreamHostAndPorts:0:Port"] = "443"
+            })
+            .Build();
+
+        var handler = new ReponseFixe(
+            """
+            {
+              "openapi": "3.0.4",
+              "info": { "title": "Bibliotheque", "version": "v1" },
+              "paths": {
+                "/api/Bibliotheque/salles": { "get": { "summary": "Salles" } },
+                "/health": { "get": {} }
+              }
+            }
+            """);
+        using var loggerFactory = LoggerFactory.Create(_ => { });
+        var service = new DocumentationPasserelle(new UsineHttp(handler), configuration, loggerFactory.CreateLogger<DocumentationPasserelle>());
+
+        using var document = JsonDocument.Parse(await service.ObtenirAsync(CancellationToken.None));
+        var racine = document.RootElement;
+
+        Assert.Equal("https://uqarlive-bibliotheque.onrender.com/swagger/v1/swagger.json", handler.Adresse?.ToString());
+        Assert.Equal("Salles", racine.GetProperty("paths").GetProperty("/biblio/salles").GetProperty("get").GetProperty("summary").GetString());
+        Assert.False(racine.GetProperty("paths").TryGetProperty("/health", out _));
+        Assert.False(racine.GetProperty("paths").TryGetProperty("/api/Bibliotheque/salles", out _));
+        Assert.Contains("/biblio", racine.GetProperty("info").GetProperty("description").GetString());
+    }
+
     private sealed class ReponseFixe : HttpMessageHandler
     {
         private readonly string _corps;

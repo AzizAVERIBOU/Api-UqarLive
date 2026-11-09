@@ -79,7 +79,7 @@ public class DocumentationPasserelle
         info["title"] = "UQAR Live";
         info["version"] = "1.0";
         info["description"] =
-            "Documentation de la passerelle. Try it out appelle cette adresse : /auth rejoint le service d'authentification.";
+            "Documentation de la passerelle. Try it out appelle cette adresse : /auth rejoint l'authentification, /biblio rejoint la bibliothèque. Un service injoignable est ignoré.";
         document["servers"] = new JsonArray(new JsonObject { ["url"] = "/" });
 
         return document.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });

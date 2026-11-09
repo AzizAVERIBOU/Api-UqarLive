@@ -8,6 +8,15 @@
       "DownstreamHostAndPorts": [
         { "Host": "api-uqarlive.onrender.com", "Port": 443 }
       ]
+    },
+    {
+      "UpstreamPathTemplate": "/biblio/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "DownstreamPathTemplate": "/api/Bibliotheque/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        { "Host": "uqarlive-bibliotheque.onrender.com", "Port": 443 }
+      ]
     }
   ],
   "GlobalConfiguration": {
