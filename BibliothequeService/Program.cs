@@ -1,31 +1,38 @@
-using Microsoft.EntityFrameworkCore;
 using BibliothequeService.Data;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuration du port d'écoute
-builder.WebHost.UseUrls("http://+:5004");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection est absente. Définissez la variable d'environnement ConnectionStrings__DefaultConnection.");
+}
 
-// Forcer le mode développement
-builder.Environment.EnvironmentName = "Development";
-
-// Add services to the container.
 builder.Services.AddDbContext<BibliothequeDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    BibliothequeDbContext.UtiliserPostgres(options, connectionString));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "BibliothequeService API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "UQAR Live — Bibliothèque",
+        Version = "v1",
+        Description = """
+            Salles et réservations.
+            Les lectures sont ouvertes. Créer une réservation exige un code permanent qui correspond à un compte actif.
+            """
+    });
 });
 
-// Configure HTTP client for inter-service communication
 var authService = builder.Configuration["Services:AuthService"];
 if (string.IsNullOrWhiteSpace(authService))
 {
@@ -35,22 +42,42 @@ if (string.IsNullOrWhiteSpace(authService))
 builder.Services.AddHttpClient("AuthService", client =>
 {
     client.BaseAddress = new Uri(authService.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(90);
 });
+
+var environnement = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+if (!string.Equals(environnement, "Testing", StringComparison.OrdinalIgnoreCase))
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5004";
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "BibliothequeService API V1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "UQAR Live — Bibliothèque");
+    c.DocumentTitle = "UQAR Live — Bibliothèque";
+    c.DefaultModelsExpandDepth(2);
+});
 
-app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
+app.MapGet("/", () => Results.Ok("Bibliotheque service up"))
+    .WithTags("Santé")
+    .WithSummary("Le processus est démarré.");
+app.MapGet("/health", () => Results.Ok("Healthy"))
+    .WithTags("Santé")
+    .WithSummary("Sonde utilisée par Render.");
+
+app.Logger.LogInformation(
+    "Service Bibliothèque démarré sur le port {Port}",
+    Environment.GetEnvironmentVariable("PORT") ?? "5004");
+
 app.Run();
+
+public partial class Program
+{
+}

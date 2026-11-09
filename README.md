@@ -160,7 +160,7 @@ Le chemin appelé est `api/Authentification/VerifierUtilisateur/{codePermanent}`
 
 ### Gateway (Ocelot)
 
-`Gateway/ocelot.json` ne publie pour l'instant que `/auth/{everything}`, vers `api-uqarlive.onrender.com`. Les autres services ne sont pas routés tant qu'ils ne sont pas en ligne.
+`Gateway/ocelot.json` publie `/auth/{everything}` vers `api-uqarlive.onrender.com` et `/biblio/{everything}` vers `uqarlive-bibliotheque.onrender.com`. Le service bibliothèque n'est pas encore en ligne : la passerelle ignore sa documentation tant qu'il ne répond pas. Association, Marché et Cafétéria ne sont pas routés.
 
 ---
 

@@ -43,7 +43,8 @@ app.MapGet("/", () => Results.Ok(new
     message = "UQAR Live",
     sante = "/health",
     documentation = "/swagger",
-    authentification = "/auth"
+    authentification = "/auth",
+    bibliotheque = "/biblio"
 }));
 app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapGet("/swagger/passerelle.json", async (DocumentationPasserelle documentation, CancellationToken annulation) =>
