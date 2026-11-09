@@ -57,6 +57,7 @@ namespace AssociationService.Data
                 entity.Property(e => e.DateDebut).IsRequired();
                 entity.Property(e => e.DateFin).IsRequired();
                 entity.Property(e => e.Statut).IsRequired();
+                entity.OwnsOne(e => e.Lieu);
             });
         }
     }
