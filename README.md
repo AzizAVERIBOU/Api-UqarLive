@@ -7,9 +7,9 @@
 
 Backend **microservices** pour l’application **UQAR Live** : APIs REST en **ASP.NET Core** (.NET 8), routage centralisé via **Ocelot**, persistance **PostgreSQL** avec **Entity Framework Core** et **Npgsql**.
 
-Le dépôt compile la solution et exécute les tests d’authentification avec **GitHub Actions**. Il n’y a pas de déploiement automatique.
+Le dépôt compile la solution et exécute les tests avec **GitHub Actions**. Il n’y a pas de déploiement automatique.
 
-Le service d’authentification est en ligne : [https://api-uqarlive.onrender.com](https://api-uqarlive.onrender.com). Les autres services ne sont pas encore publiés.
+Trois services sont en ligne sur Render : la [passerelle](https://uqarlive-gateway.onrender.com), l’[authentification](https://api-uqarlive.onrender.com) et la [bibliothèque](https://uqarlive-bibliotheque.onrender.com). Association, Marché et Cafétéria ne sont pas encore publiés.
 
 **Dépôt :** [https://github.com/AzizAVERIBOU/Api-UqarLive](https://github.com/AzizAVERIBOU/Api-UqarLive)
 
@@ -38,17 +38,17 @@ Le service d’authentification est en ligne : [https://api-uqarlive.onrender.co
 
 | Composant | Rôle | Port local (exemple) |
 |-----------|------|-------------------------|
-| **Gateway** | Point d’entrée unique, **Ocelot** (`ocelot.json`), Swagger UI | `5000` (ou `PORT`) |
+| **Gateway** | Point d’entrée unique, **Ocelot** (`ocelot.json`), Swagger centralisé. Public : [uqarlive-gateway.onrender.com](https://uqarlive-gateway.onrender.com) | `5000` (ou `PORT`) |
 | **AuthentificationService** | Comptes, JWT (`JwtBearer`). Public : [api-uqarlive.onrender.com](https://api-uqarlive.onrender.com) | `5001` |
-| **AssociationService** | Associations, adhésions, événements | `5002` |
-| **MarketService** | Marketplace | `5003` |
-| **BibliothequeService** | Bibliothèque / salles | `5004` |
-| **CafetariaService** | Cafétéria, menus et horaires | `5005` |
+| **AssociationService** | Associations, adhésions, événements. Pas encore publié | `5002` |
+| **MarketService** | Marketplace. Pas encore publié | `5003` |
+| **BibliothequeService** | Salles et réservations. Public : [uqarlive-bibliotheque.onrender.com](https://uqarlive-bibliotheque.onrender.com) | `5004` |
+| **CafetariaService** | Cafétéria, menus et horaires. Pas encore publié | `5005` |
 | **RessourcesPartagees** | Bibliothèque de classes partagée | — |
 
-Chaque service métier a son propre **DbContext**. Tous lisent `ConnectionStrings:DefaultConnection` et peuvent partager une même base PostgreSQL.
+Chaque service métier a son propre **DbContext**. Authentification et bibliothèque partagent la même base PostgreSQL, avec deux historiques de migrations distincts.
 
-La passerelle envoie `/auth/…` vers `https://api-uqarlive.onrender.com/api/Authentification/…`. Association, Marché et Bibliothèque appellent cette même adresse pour `VerifierUtilisateur`.
+La passerelle envoie `/auth/…` vers l’authentification et `/biblio/…` vers la bibliothèque. Association, Marché et Bibliothèque appellent `VerifierUtilisateur` pour vérifier qu’un code permanent correspond à un compte actif. La cafétéria n’appelle pas l’authentification.
 
 ---
 
@@ -61,7 +61,7 @@ La passerelle envoie `/auth/…` vers `https://api-uqarlive.onrender.com/api/Aut
 - **APIs :** **Swashbuckle.AspNetCore 10.1.7** sur les services web ; **Microsoft.AspNetCore.OpenApi 8.0.22** là où il est référencé.
 - **Auth :** **Microsoft.AspNetCore.Authentication.JwtBearer 8.0.22**.
 - **JSON :** **Newtonsoft.Json 13.0.4** (là où le package est présent) et **System.Text.Json** (ASP.NET Core).
-- **CI :** GitHub Actions, build Release de `API-Backend.sln`, puis les tests d’authentification. Pas de déploiement dans le workflow.
+- **CI :** GitHub Actions, build Release de `API-Backend.sln`, puis `dotnet test` sur la solution (authentification et passerelle). Pas de déploiement dans le workflow.
 
 > Les versions **EF Core 10** et **ASP.NET Core 10** sur NuGet ciblent **.NET 10** ; ce dépôt reste sur **.NET 8** avec les versions **compatibles net8.0**.
 
@@ -111,22 +111,22 @@ Exemple pour lancer un service depuis la racine du dépôt :
 ```bash
 dotnet run --project Gateway
 dotnet run --project AuthentificationService
+dotnet run --project BibliothequeService
 ```
 
-Les ports viennent de `launchSettings.json` et de `UseUrls` dans `Program.cs`. La gateway écoute `PORT`, sinon `5000`. Le service d’authentification écoute `PORT`, sinon `5001`.
+Les ports viennent de `launchSettings.json` et de `UseUrls` dans `Program.cs`. Chaque service écoute `PORT`, sinon son port local : passerelle `5000`, authentification `5001`, bibliothèque `5004`.
 
-**Service d’authentification en ligne**
+**Services en ligne**
 
-| Usage | Adresse |
-|---|---|
-| Santé | https://api-uqarlive.onrender.com/health |
-| Swagger | https://api-uqarlive.onrender.com/swagger |
-| Inscription | `POST /api/Authentification/Inscription` |
-| Connexion | `POST /api/Authentification/Connexion` |
-| Profil | `GET /api/Authentification/ObtenirProfilUtilisateur` |
-| Vérifier un code | `GET /api/Authentification/VerifierUtilisateur/{codePermanent}` |
+| Service | Santé | Documentation | Entrée utile |
+|---|---|---|---|
+| Passerelle | https://uqarlive-gateway.onrender.com/health | https://uqarlive-gateway.onrender.com/swagger | `/auth/…`, `/biblio/…` |
+| Authentification | https://api-uqarlive.onrender.com/health | https://api-uqarlive.onrender.com/swagger | `POST /api/Authentification/Connexion` |
+| Bibliothèque | https://uqarlive-bibliotheque.onrender.com/health | https://uqarlive-bibliotheque.onrender.com/swagger | `GET /api/Bibliotheque/salles` |
 
-L’instance gratuite s’endort : le premier appel peut prendre près d’une minute.
+Par la passerelle, les mêmes actions sont `/auth/Connexion` et `/biblio/salles`. L’inscription est `POST /auth/Inscription`. Le profil authentifié est `GET /auth/ObtenirProfilUtilisateur`. Vérifier un code est `GET /auth/VerifierUtilisateur/{codePermanent}`.
+
+Les instances gratuites s’endorment : le premier appel peut prendre près d’une minute. La passerelle réveille ensuite le service appelé.
 
 ---
 
@@ -160,7 +160,7 @@ Le chemin appelé est `api/Authentification/VerifierUtilisateur/{codePermanent}`
 
 ### Gateway (Ocelot)
 
-`Gateway/ocelot.json` publie `/auth/{everything}` vers `api-uqarlive.onrender.com` et `/biblio/{everything}` vers `uqarlive-bibliotheque.onrender.com`. Le service bibliothèque n'est pas encore en ligne : la passerelle ignore sa documentation tant qu'il ne répond pas. Association, Marché et Cafétéria ne sont pas routés.
+`Gateway/ocelot.json` publie `/auth/{everything}` vers `api-uqarlive.onrender.com` et `/biblio/{everything}` vers `uqarlive-bibliotheque.onrender.com`. Association, Marché et Cafétéria ne sont pas routés.
 
 ---
 
@@ -171,6 +171,7 @@ Chaque service a un Dockerfile. Le contexte de build est la **racine du dépôt*
 ```bash
 docker build -t uqarlive-gateway -f Gateway/Dockerfile .
 docker build -t uqarlive-auth -f AuthentificationService/Dockerfile .
+docker build -t uqarlive-bibliotheque -f BibliothequeService/Dockerfile .
 ```
 
 Il n’y a pas de `docker-compose` à la racine.
@@ -186,25 +187,25 @@ Deux branches long terme :
 
 Chaque tâche part de `develop` sur une branche `feature/...`, puis y revient par pull request. `main` est mise à jour depuis `develop`, aussi par pull request.
 
-Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compile `API-Backend.sln` en Release avec le SDK .NET 8, puis lance `AuthentificationService.Tests`. Ces tests démarrent un PostgreSQL 18 jetable. Il tourne sur chaque push vers `main` ou `develop`, sur chaque pull request vers l'une de ces branches, et à la demande depuis l'onglet Actions. Un nouveau push sur la même référence annule le run encore en cours. Les paquets NuGet sont mis en cache.
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compile `API-Backend.sln` en Release avec le SDK .NET 8, puis lance `dotnet test` sur la solution. Les tests d’authentification démarrent un PostgreSQL 18 jetable. Les tests de la passerelle réécrivent les documents Swagger en mémoire. Le workflow tourne sur chaque push vers `main` ou `develop`, sur chaque pull request vers l'une de ces branches, et à la demande depuis l'onglet Actions. Un nouveau push sur la même référence annule le run encore en cours. Les paquets NuGet sont mis en cache.
 
-Aucun job ne publie ni ne déploie les services. Le déploiement se fera plus tard, en dehors de ce workflow.
+Aucun job ne publie ni ne déploie les services. Le déploiement se fait à la main sur Render, depuis la branche `develop`.
 
 ---
 
 ## Documentation des API
 
-Le service d’authentification publie son contrat sur [https://api-uqarlive.onrender.com/swagger](https://api-uqarlive.onrender.com/swagger).
+La page à montrer est le Swagger de la passerelle : [https://uqarlive-gateway.onrender.com/swagger](https://uqarlive-gateway.onrender.com/swagger). Elle reprend les contrats des services joignables et réécrit les chemins : `/api/Authentification/Connexion` devient `/auth/Connexion`, `/api/Bibliotheque/salles` devient `/biblio/salles`. « Try it out » appelle la passerelle. Un service injoignable est ignoré, la page reste ouverte.
 
-La passerelle reprend ce contrat dans sa propre page [http://localhost:5000/swagger](http://localhost:5000/swagger). Les chemins y sont ceux de la passerelle : `/api/Authentification/Connexion` devient `/auth/Connexion`. Un service absent est ignoré, la page reste ouverte.
+Chaque service publie aussi son propre Swagger : [authentification](https://api-uqarlive.onrender.com/swagger), [bibliothèque](https://uqarlive-bibliotheque.onrender.com/swagger).
 
 ---
 
 ## Migrations Entity Framework
 
-Les migrations de l’authentification sont versionnées dans `AuthentificationService/Migrations`. Le service les applique au démarrage avec `Database.Migrate()`.
+Les migrations de l’authentification sont versionnées dans `AuthentificationService/Migrations`. Celles de la bibliothèque sont dans `BibliothequeService/Migrations`. Chaque service les applique au démarrage avec `Database.Migrate()`.
 
-Les autres services n’ont pas encore de migrations versionnées.
+Les historiques restent séparés dans la même base : `__EFMigrationsHistory` pour l’authentification, `__BibliothequeMigrationsHistory` pour la bibliothèque. Association, Marché et Cafétéria n’ont pas encore de migrations versionnées.
 
 ---
 
