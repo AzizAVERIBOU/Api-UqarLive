@@ -10,7 +10,7 @@ namespace AssociationService.Models
         public string Description { get; set; }
         public DateTime DateDebut { get; set; }
         public DateTime DateFin { get; set; }
-        public Adresse Lieu { get; set; }
+        public AdressePostale Lieu { get; set; } = new();
         public int? CapaciteMax { get; set; }
         public List<string>? Participants { get; set; }
         public StatutEvenement Statut { get; set; }
