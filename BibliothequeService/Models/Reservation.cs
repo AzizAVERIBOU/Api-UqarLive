@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace BibliothequeService.Models
 {
@@ -39,6 +40,7 @@ namespace BibliothequeService.Models
         public string? Commentaire { get; set; }
 
         [JsonIgnore]
+        [ValidateNever]
         public Salle Salle { get; set; } = null!;
     }
 }
