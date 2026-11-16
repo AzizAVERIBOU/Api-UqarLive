@@ -67,25 +67,11 @@ namespace MarketService.Controllers
             if (categorie == null)
                 return BadRequest(new { message = "Catégorie invalide" });
 
-            // Vérifier que l'utilisateur existe dans le service d'authentification
-            var client = _httpClientFactory.CreateClient("AuthService");
-            var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{produit.CodePermanentVendeur}");
+            var compte = await CompteActifAsync(produit.CodePermanentVendeur);
+            if (compte != null)
+                return compte;
 
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Utilisateur non trouvé : {CodePermanent}, Status: {Status}", 
-                    produit.CodePermanentVendeur, response.StatusCode);
-                
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    return BadRequest(new { message = "Le code permanent du vendeur n'existe pas dans le système d'authentification" });
-                }
-                else
-                {
-                    return BadRequest(new { message = "Erreur lors de la vérification de l'utilisateur" });
-                }
-            }
-
+            produit.Id = 0;
             produit.DateCreation = DateTime.UtcNow;
             produit.Statut = StatutProduit.Disponible;
 
@@ -174,6 +160,7 @@ namespace MarketService.Controllers
         [HttpPost("categories")]
         public async Task<ActionResult<Categorie>> CreateCategorie([FromBody] Categorie categorie)
         {
+            categorie.Id = 0;
             categorie.EstActive = true;
             _context.Categories.Add(categorie);
             await _context.SaveChangesAsync();
@@ -195,6 +182,33 @@ namespace MarketService.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        private async Task<ActionResult?> CompteActifAsync(string codePermanent)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient("AuthService");
+                var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{codePermanent}");
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return BadRequest(new { message = "Le code permanent du vendeur n'existe pas dans le système d'authentification" });
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Vérification du vendeur refusée : {CodePermanent}, Status: {Status}",
+                        codePermanent, response.StatusCode);
+                    return BadRequest(new { message = "Erreur lors de la vérification de l'utilisateur" });
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la vérification de l'utilisateur");
+                return StatusCode(500, "Erreur lors de la vérification de l'utilisateur");
+            }
         }
     }
 } 

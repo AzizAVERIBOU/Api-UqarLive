@@ -44,7 +44,8 @@ app.MapGet("/", () => Results.Ok(new
     sante = "/health",
     documentation = "/swagger",
     authentification = "/auth",
-    bibliotheque = "/biblio"
+    bibliotheque = "/biblio",
+    marche = "/marche"
 }));
 app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapGet("/swagger/passerelle.json", async (DocumentationPasserelle documentation, CancellationToken annulation) =>
