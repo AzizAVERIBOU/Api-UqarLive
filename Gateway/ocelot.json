@@ -17,6 +17,15 @@
       "DownstreamHostAndPorts": [
         { "Host": "uqarlive-bibliotheque.onrender.com", "Port": 443 }
       ]
+    },
+    {
+      "UpstreamPathTemplate": "/marche/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "DownstreamPathTemplate": "/api/Market/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        { "Host": "uqarlive-marche.onrender.com", "Port": 443 }
+      ]
     }
   ],
   "GlobalConfiguration": {
