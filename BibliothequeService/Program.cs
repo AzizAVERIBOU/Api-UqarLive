@@ -32,6 +32,8 @@ builder.Services.AddSwaggerGen(c =>
             Les lectures sont ouvertes. Créer une réservation exige un code permanent qui correspond à un compte actif.
             """
     });
+    c.SchemaFilter<BibliothequeService.Swagger.ExemplesSwagger>();
+    c.OperationFilter<BibliothequeService.Swagger.DescriptionsSwagger>();
 });
 
 var authService = builder.Configuration["Services:AuthService"];

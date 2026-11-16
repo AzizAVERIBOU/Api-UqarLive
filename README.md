@@ -61,7 +61,7 @@ La passerelle envoie `/auth/…` vers l’authentification et `/biblio/…` vers
 - **APIs :** **Swashbuckle.AspNetCore 10.1.7** sur les services web ; **Microsoft.AspNetCore.OpenApi 8.0.22** là où il est référencé.
 - **Auth :** **Microsoft.AspNetCore.Authentication.JwtBearer 8.0.22**.
 - **JSON :** **Newtonsoft.Json 13.0.4** (là où le package est présent) et **System.Text.Json** (ASP.NET Core).
-- **CI :** GitHub Actions, build Release de `API-Backend.sln`, puis `dotnet test` sur la solution (authentification et passerelle). Pas de déploiement dans le workflow.
+- **CI :** GitHub Actions, build Release de `API-Backend.sln`, puis `dotnet test` sur la solution (authentification, bibliothèque et passerelle). Pas de déploiement dans le workflow.
 
 > Les versions **EF Core 10** et **ASP.NET Core 10** sur NuGet ciblent **.NET 10** ; ce dépôt reste sur **.NET 8** avec les versions **compatibles net8.0**.
 
@@ -79,6 +79,7 @@ API-Backend/
 ├── AssociationService/
 ├── MarketService/
 ├── BibliothequeService/
+├── BibliothequeService.Tests/
 ├── CafetariaService/
 ├── RessourcesPartagees/     # Types partagés
 ├── .github/workflows/ci.yml # Compilation sur main, develop et pull requests
@@ -187,7 +188,7 @@ Deux branches long terme :
 
 Chaque tâche part de `develop` sur une branche `feature/...`, puis y revient par pull request. `main` est mise à jour depuis `develop`, aussi par pull request.
 
-Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compile `API-Backend.sln` en Release avec le SDK .NET 8, puis lance `dotnet test` sur la solution. Les tests d’authentification démarrent un PostgreSQL 18 jetable. Les tests de la passerelle réécrivent les documents Swagger en mémoire. Le workflow tourne sur chaque push vers `main` ou `develop`, sur chaque pull request vers l'une de ces branches, et à la demande depuis l'onglet Actions. Un nouveau push sur la même référence annule le run encore en cours. Les paquets NuGet sont mis en cache.
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compile `API-Backend.sln` en Release avec le SDK .NET 8, puis lance `dotnet test` sur la solution. Les tests d’authentification et de bibliothèque démarrent chacun un PostgreSQL 18 jetable. Les tests de la passerelle réécrivent les documents Swagger en mémoire. Le workflow tourne sur chaque push vers `main` ou `develop`, sur chaque pull request vers l'une de ces branches, et à la demande depuis l'onglet Actions. Un nouveau push sur la même référence annule le run encore en cours. Les paquets NuGet sont mis en cache.
 
 Aucun job ne publie ni ne déploie les services. Le déploiement se fait à la main sur Render, depuis la branche `develop`.
 

@@ -7,7 +7,7 @@ namespace AssociationService.Models
     {
         public DateTime DateDebut { get; set; }
         public DateTime DateFin { get; set; }
-        public Adresse Lieu { get; set; }
+        public AdressePostale Lieu { get; set; } = new();
         public StatutEvenement Statut { get; set; }
     }
 } 
