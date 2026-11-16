@@ -1,5 +1,4 @@
 using CafetariaService.Data;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,16 +10,7 @@ builder.Environment.EnvironmentName = "Development";
 
 // Configuration de la base de données (PostgreSQL)
 builder.Services.AddDbContext<CafetariaDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseNpgsql(connectionString, npgsqlOptions =>
-    {
-        npgsqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorCodesToAdd: null);
-    });
-});
+    CafetariaDbContext.UtiliserPostgres(options, builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Ajout des services MVC
 builder.Services.AddControllers()

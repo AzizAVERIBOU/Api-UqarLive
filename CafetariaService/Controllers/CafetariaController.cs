@@ -3,6 +3,7 @@ using CafetariaService.Models;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using CafetariaService.Data;
+using Npgsql;
 
 namespace CafetariaService.Controllers
 {
@@ -28,6 +29,7 @@ namespace CafetariaService.Controllers
         [HttpPost("menuitems")]
         public async Task<ActionResult<MenuItem>> AddMenuItem([FromBody] MenuItem item)
         {
+            item.Id = 0;
             _context.MenuItems.Add(item);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetMenuItems), new { id = item.Id }, item);
@@ -63,10 +65,10 @@ namespace CafetariaService.Controllers
         [HttpGet("menu/aujourdhui")]
         public async Task<ActionResult<Menu>> GetMenuDuJour()
         {
-            var aujourdhui = DateTime.Today;
+            var aujourdhui = AujourdhuiQuebec();
             var menu = await _context.Menus
                 .Include(m => m.PlatsDuJour)
-                .FirstOrDefaultAsync(m => m.Date.Date == aujourdhui && m.EstActif);
+                .FirstOrDefaultAsync(m => m.Date == aujourdhui && m.EstActif);
             
             if (menu == null)
             {
@@ -77,20 +79,39 @@ namespace CafetariaService.Controllers
         }
 
         [HttpPost("menu")]
-        public async Task<ActionResult<Menu>> CreerMenuDuJour([FromBody] Menu menu)
+        public async Task<ActionResult<Menu>> CreerMenuDuJour([FromBody] DemandeMenu demande)
         {
-            // Vérifier s'il existe déjà un menu pour cette date
-            var menuExistant = await _context.Menus
-                .FirstOrDefaultAsync(m => m.Date.Date == menu.Date.Date);
-            
-            if (menuExistant != null)
+            if (await _context.Menus.AnyAsync(m => m.Date == demande.Date))
             {
                 return BadRequest(new { message = "Un menu existe déjà pour cette date" });
             }
-            
+
+            var ids = demande.PlatIds.Distinct().ToList();
+            var plats = await _context.MenuItems
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
+            if (plats.Count != ids.Count)
+            {
+                return BadRequest(new { message = "Un plat indiqué n'existe pas" });
+            }
+
+            var menu = new Menu
+            {
+                Date = demande.Date,
+                Description = demande.Description,
+                EstActif = true,
+                PlatsDuJour = plats
+            };
             _context.Menus.Add(menu);
-            await _context.SaveChangesAsync();
-            
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (EstViolationUnique(ex))
+            {
+                return BadRequest(new { message = "Un menu existe déjà pour cette date" });
+            }
+
             return CreatedAtAction(nameof(GetMenuDuJour), new { id = menu.Id }, menu);
         }
 
@@ -112,14 +133,47 @@ namespace CafetariaService.Controllers
         [HttpPut("horaires")]
         public async Task<IActionResult> UpdateHorairesSemaine([FromBody] List<Horaire> horaires)
         {
-            // Supprimer tous les horaires existants
+            if (horaires.Select(h => h.JourDeLaSemaine).Distinct().Count() != horaires.Count)
+            {
+                return BadRequest(new { message = "Un jour est en double" });
+            }
+
+            if (horaires.Any(h => h.HeureFermeture <= h.HeureOuverture))
+            {
+                return BadRequest(new { message = "L'heure de fermeture doit être après l'heure d'ouverture" });
+            }
+
             _context.Horaires.RemoveRange(_context.Horaires);
-            
-            // Ajouter les nouveaux horaires
+            foreach (var horaire in horaires)
+            {
+                horaire.Id = 0;
+            }
+
             _context.Horaires.AddRange(horaires);
             await _context.SaveChangesAsync();
-            
+
             return NoContent();
+        }
+
+        private static bool EstViolationUnique(DbUpdateException ex)
+        {
+            return ex.InnerException is PostgresException postgres
+                && postgres.SqlState == PostgresErrorCodes.UniqueViolation;
+        }
+
+        private static DateOnly AujourdhuiQuebec()
+        {
+            TimeZoneInfo zone;
+            try
+            {
+                zone = TimeZoneInfo.FindSystemTimeZoneById("America/Toronto");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                zone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+            }
+
+            return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zone));
         }
 
         [HttpGet("horaires/{jour}")]
