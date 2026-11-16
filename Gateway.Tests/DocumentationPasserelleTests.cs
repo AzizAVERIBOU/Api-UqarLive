@@ -88,6 +88,44 @@ public class DocumentationPasserelleTests
         Assert.Contains("/biblio", racine.GetProperty("info").GetProperty("description").GetString());
     }
 
+    [Fact]
+    public async Task Obtenir_PublieLesCheminsSousMarche()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Routes:0:UpstreamPathTemplate"] = "/marche/{everything}",
+                ["Routes:0:DownstreamPathTemplate"] = "/api/Market/{everything}",
+                ["Routes:0:DownstreamScheme"] = "https",
+                ["Routes:0:DownstreamHostAndPorts:0:Host"] = "uqarlive-marche.onrender.com",
+                ["Routes:0:DownstreamHostAndPorts:0:Port"] = "443"
+            })
+            .Build();
+
+        var handler = new ReponseFixe(
+            """
+            {
+              "openapi": "3.0.4",
+              "info": { "title": "Marche", "version": "v1" },
+              "paths": {
+                "/api/Market/produits": { "get": { "summary": "Annonces" } },
+                "/health": { "get": {} }
+              }
+            }
+            """);
+        using var loggerFactory = LoggerFactory.Create(_ => { });
+        var service = new DocumentationPasserelle(new UsineHttp(handler), configuration, loggerFactory.CreateLogger<DocumentationPasserelle>());
+
+        using var document = JsonDocument.Parse(await service.ObtenirAsync(CancellationToken.None));
+        var racine = document.RootElement;
+
+        Assert.Equal("https://uqarlive-marche.onrender.com/swagger/v1/swagger.json", handler.Adresse?.ToString());
+        Assert.Equal("Annonces", racine.GetProperty("paths").GetProperty("/marche/produits").GetProperty("get").GetProperty("summary").GetString());
+        Assert.False(racine.GetProperty("paths").TryGetProperty("/health", out _));
+        Assert.False(racine.GetProperty("paths").TryGetProperty("/api/Market/produits", out _));
+        Assert.Contains("/marche", racine.GetProperty("info").GetProperty("description").GetString());
+    }
+
     private sealed class ReponseFixe : HttpMessageHandler
     {
         private readonly string _corps;

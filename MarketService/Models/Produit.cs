@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace MarketService.Models
 {
@@ -40,6 +42,9 @@ namespace MarketService.Models
 
         // Clé étrangère pour la catégorie
         public int CategorieId { get; set; }
+
+        [JsonIgnore]
+        [ValidateNever]
         public virtual Categorie Categorie { get; set; } = null!;
     }
 } 
