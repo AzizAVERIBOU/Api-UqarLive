@@ -2,6 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RessourcesPartagees
 {
+    /// <summary>
+    /// Adresse sans identifiant, possédée par un autre objet.
+    /// L'appartement est facultatif et limité à 50 caractères. Les autres champs sont obligatoires.
+    /// </summary>
     public class AdressePostale
     {
         [Required]
