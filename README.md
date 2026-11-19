@@ -9,7 +9,7 @@ Backend **microservices** pour l’application **UQAR Live** : APIs REST en **AS
 
 Le dépôt compile la solution et exécute les tests avec **GitHub Actions**. Il n’y a pas de déploiement automatique.
 
-Cinq services sont en ligne sur Render : la [passerelle](https://uqarlive-gateway.onrender.com), l’[authentification](https://api-uqarlive.onrender.com), la [bibliothèque](https://uqarlive-bibliotheque.onrender.com), le [marché](https://uqarlive-marche.onrender.com) et la [cafétéria](https://uqarlive-cafetaria.onrender.com). La route `/asso` est prête. Le service Association n’est pas encore publié.
+Les six services sont en ligne sur Render : la [passerelle](https://uqarlive-gateway.onrender.com), l’[authentification](https://api-uqarlive.onrender.com), la [bibliothèque](https://uqarlive-bibliotheque.onrender.com), le [marché](https://uqarlive-marche.onrender.com), la [cafétéria](https://uqarlive-cafetaria.onrender.com) et les [associations](https://uqarlive-association.onrender.com). Chaque dossier de service a son propre README.
 
 **Dépôt :** [https://github.com/AzizAVERIBOU/Api-UqarLive](https://github.com/AzizAVERIBOU/Api-UqarLive)
 
@@ -36,15 +36,49 @@ Cinq services sont en ligne sur Render : la [passerelle](https://uqarlive-gatewa
 
 ## Architecture
 
+```mermaid
+flowchart TB
+  client[Client]
+  gw["Passerelle :5000"]
+  client --> gw
+
+  auth["Authentification :5001"]
+  biblio["Bibliothèque :5004"]
+  marche["Marché :5003"]
+  cafete["Cafétéria :5005"]
+  asso["Association :5002"]
+
+  gw -->|/auth| auth
+  gw -->|/biblio| biblio
+  gw -->|/marche| marche
+  gw -->|/cafete| cafete
+  gw -->|/asso| asso
+
+  biblio -->|compte actif| auth
+  marche -->|compte actif| auth
+  asso -->|compte actif| auth
+
+  pg[("PostgreSQL 18")]
+  auth --> pg
+  biblio --> pg
+  marche --> pg
+  cafete --> pg
+  asso --> pg
+
+  shared[RessourcesPartagees]
+  auth -.-> shared
+  asso -.-> shared
+```
+
 | Composant | Rôle | Port local (exemple) |
 |-----------|------|-------------------------|
-| **Gateway** | Point d’entrée unique, **Ocelot** (`ocelot.json`), Swagger centralisé. Public : [uqarlive-gateway.onrender.com](https://uqarlive-gateway.onrender.com) | `5000` (ou `PORT`) |
-| **AuthentificationService** | Comptes, JWT (`JwtBearer`). Public : [api-uqarlive.onrender.com](https://api-uqarlive.onrender.com) | `5001` |
-| **AssociationService** | Associations, adhésions, événements. Route `/asso` prête, service pas encore publié | `5002` |
-| **MarketService** | Marketplace. Public : [uqarlive-marche.onrender.com](https://uqarlive-marche.onrender.com) | `5003` |
-| **BibliothequeService** | Salles et réservations. Public : [uqarlive-bibliotheque.onrender.com](https://uqarlive-bibliotheque.onrender.com) | `5004` |
-| **CafetariaService** | Cafétéria, menus et horaires. Public : [uqarlive-cafetaria.onrender.com](https://uqarlive-cafetaria.onrender.com) | `5005` |
-| **RessourcesPartagees** | Bibliothèque de classes partagée | — |
+| **Gateway** | Point d’entrée unique, **Ocelot** (`ocelot.json`), Swagger centralisé. [README](Gateway/README.md). Public : [uqarlive-gateway.onrender.com](https://uqarlive-gateway.onrender.com) | `5000` (ou `PORT`) |
+| **AuthentificationService** | Comptes, JWT (`JwtBearer`). [README](AuthentificationService/README.md). Public : [api-uqarlive.onrender.com](https://api-uqarlive.onrender.com) | `5001` |
+| **AssociationService** | Associations, adhésions, événements. [README](AssociationService/README.md). Public : [uqarlive-association.onrender.com](https://uqarlive-association.onrender.com) | `5002` |
+| **MarketService** | Marketplace. [README](MarketService/README.md). Public : [uqarlive-marche.onrender.com](https://uqarlive-marche.onrender.com) | `5003` |
+| **BibliothequeService** | Salles et réservations. [README](BibliothequeService/README.md). Public : [uqarlive-bibliotheque.onrender.com](https://uqarlive-bibliotheque.onrender.com) | `5004` |
+| **CafetariaService** | Cafétéria, menus et horaires. [README](CafetariaService/README.md). Public : [uqarlive-cafetaria.onrender.com](https://uqarlive-cafetaria.onrender.com) | `5005` |
+| **RessourcesPartagees** | Bibliothèque de classes partagée. [README](RessourcesPartagees/README.md) | — |
 
 Chaque service métier a son propre **DbContext**. Les services partagent la même base PostgreSQL, avec un historique de migrations par service.
 
@@ -129,8 +163,9 @@ Les ports viennent de `launchSettings.json` et de `UseUrls` dans `Program.cs`. C
 | Bibliothèque | https://uqarlive-bibliotheque.onrender.com/health | https://uqarlive-bibliotheque.onrender.com/swagger | `GET /api/Bibliotheque/salles` |
 | Marché | https://uqarlive-marche.onrender.com/health | https://uqarlive-marche.onrender.com/swagger | `GET /api/Market/produits` |
 | Cafétéria | https://uqarlive-cafetaria.onrender.com/health | https://uqarlive-cafetaria.onrender.com/swagger | `GET /api/Cafetaria/menuitems` |
+| Association | https://uqarlive-association.onrender.com/health | https://uqarlive-association.onrender.com/swagger | `GET /api/Association/ObtenirAssociations` |
 
-Par la passerelle, les mêmes actions sont `/auth/Connexion` et `/biblio/salles`. L’inscription est `POST /auth/Inscription`. Le profil authentifié est `GET /auth/ObtenirProfilUtilisateur`. Vérifier un code est `GET /auth/VerifierUtilisateur/{codePermanent}`.
+Par la passerelle, les mêmes actions sont `/auth/Connexion`, `/biblio/salles`, `/marche/produits`, `/cafete/menuitems` et `/asso/ObtenirAssociations`. L’inscription est `POST /auth/Inscription`. Le profil authentifié est `GET /auth/ObtenirProfilUtilisateur`. Vérifier un code est `GET /auth/VerifierUtilisateur/{codePermanent}`.
 
 Les instances gratuites s’endorment : le premier appel peut prendre près d’une minute. La passerelle réveille ensuite le service appelé.
 
@@ -166,7 +201,7 @@ Le chemin appelé est `api/Authentification/VerifierUtilisateur/{codePermanent}`
 
 ### Gateway (Ocelot)
 
-`Gateway/ocelot.json` publie `/auth/{everything}` vers `api-uqarlive.onrender.com`, `/biblio/{everything}` vers `uqarlive-bibliotheque.onrender.com`, `/marche/{everything}` vers `uqarlive-marche.onrender.com`, `/cafete/{everything}` vers `uqarlive-cafetaria.onrender.com` et `/asso/{everything}` vers `uqarlive-association.onrender.com`. Le service Association reste à créer sur Render.
+`Gateway/ocelot.json` publie `/auth/{everything}` vers `api-uqarlive.onrender.com`, `/biblio/{everything}` vers `uqarlive-bibliotheque.onrender.com`, `/marche/{everything}` vers `uqarlive-marche.onrender.com`, `/cafete/{everything}` vers `uqarlive-cafetaria.onrender.com` et `/asso/{everything}` vers `uqarlive-association.onrender.com`.
 
 ---
 
@@ -178,6 +213,9 @@ Chaque service a un Dockerfile. Le contexte de build est la **racine du dépôt*
 docker build -t uqarlive-gateway -f Gateway/Dockerfile .
 docker build -t uqarlive-auth -f AuthentificationService/Dockerfile .
 docker build -t uqarlive-bibliotheque -f BibliothequeService/Dockerfile .
+docker build -t uqarlive-marche -f MarketService/Dockerfile .
+docker build -t uqarlive-cafetaria -f CafetariaService/Dockerfile .
+docker build -t uqarlive-association -f AssociationService/Dockerfile .
 ```
 
 Il n’y a pas de `docker-compose` à la racine.
@@ -195,7 +233,7 @@ Chaque tâche part de `develop` sur une branche `feature/...`, puis y revient pa
 
 Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compile `API-Backend.sln` en Release avec le SDK .NET 8, puis lance `dotnet test` sur la solution. Les tests d’authentification, de bibliothèque, de marché, de cafétéria et d’association démarrent chacun un PostgreSQL 18 jetable. Les tests de la passerelle réécrivent les documents Swagger en mémoire. Le workflow tourne sur chaque push vers `main` ou `develop`, sur chaque pull request vers l'une de ces branches, et à la demande depuis l'onglet Actions. Un nouveau push sur la même référence annule le run encore en cours. Les paquets NuGet sont mis en cache.
 
-Aucun job ne publie ni ne déploie les services. Le déploiement se fait à la main sur Render, depuis la branche `develop`.
+Aucun job ne publie ni ne déploie les services. Le déploiement se fait à la main sur Render, depuis la branche `main`.
 
 ---
 
@@ -203,7 +241,7 @@ Aucun job ne publie ni ne déploie les services. Le déploiement se fait à la m
 
 La page à montrer est le Swagger de la passerelle : [https://uqarlive-gateway.onrender.com/swagger](https://uqarlive-gateway.onrender.com/swagger). Elle reprend les contrats des services joignables et réécrit les chemins : `/api/Authentification/Connexion` devient `/auth/Connexion`, `/api/Bibliotheque/salles` devient `/biblio/salles`, `/api/Market/produits` devient `/marche/produits`, `/api/Cafetaria/menuitems` devient `/cafete/menuitems`, `/api/Association/ObtenirAssociations` devient `/asso/ObtenirAssociations`. « Try it out » appelle la passerelle. Un service injoignable est ignoré, la page reste ouverte.
 
-Chaque service publié a aussi son Swagger : [authentification](https://api-uqarlive.onrender.com/swagger), [bibliothèque](https://uqarlive-bibliotheque.onrender.com/swagger), [marché](https://uqarlive-marche.onrender.com/swagger), [cafétéria](https://uqarlive-cafetaria.onrender.com/swagger).
+Chaque service publié a aussi son Swagger : [authentification](https://api-uqarlive.onrender.com/swagger), [bibliothèque](https://uqarlive-bibliotheque.onrender.com/swagger), [marché](https://uqarlive-marche.onrender.com/swagger), [cafétéria](https://uqarlive-cafetaria.onrender.com/swagger), [associations](https://uqarlive-association.onrender.com/swagger).
 
 ---
 
