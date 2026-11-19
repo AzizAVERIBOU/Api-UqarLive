@@ -9,12 +9,14 @@ EXPOSE 5005
 # Cette image contient le SDK .NET nécessaire pour compiler l'application
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-# Copier les fichiers projet
-COPY ["CafetariaService.csproj", "./"]
+# Copier les fichiers projet (contexte: racine du repo)
+COPY ["CafetariaService/CafetariaService.csproj", "CafetariaService/"]
 # Restaurer les dépendances
-RUN dotnet restore "CafetariaService.csproj"
+RUN dotnet restore "CafetariaService/CafetariaService.csproj"
 # Copier tout le code source
 COPY . .
+# Positionner le dossier de build du service
+WORKDIR "/src/CafetariaService"
 # Build Release
 RUN dotnet build "CafetariaService.csproj" -c Release -o /app/build
 
