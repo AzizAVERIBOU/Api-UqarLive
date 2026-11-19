@@ -35,6 +35,15 @@
       "DownstreamHostAndPorts": [
         { "Host": "uqarlive-cafetaria.onrender.com", "Port": 443 }
       ]
+    },
+    {
+      "UpstreamPathTemplate": "/asso/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "DownstreamPathTemplate": "/api/Association/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        { "Host": "uqarlive-association.onrender.com", "Port": 443 }
+      ]
     }
   ],
   "GlobalConfiguration": {

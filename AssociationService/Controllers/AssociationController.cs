@@ -47,6 +47,7 @@ namespace AssociationService.Controllers
 
                 // Récupérer toutes les associations avec leurs membres et événements
                 var associations = await _context.Associations
+                    .AsNoTracking()
                     .Include(a => a.Membres)
                     .Include(a => a.Evenements)
                     .Select(a => new
@@ -124,6 +125,7 @@ namespace AssociationService.Controllers
 
                 // Récupérer l'association avec ses membres et événements
                 var association = await _context.Associations
+                    .AsNoTracking()
                     .Include(a => a.Membres)
                     .Include(a => a.Evenements)
                     .Select(a => new
@@ -1265,13 +1267,16 @@ namespace AssociationService.Controllers
                     return BadRequest(new { message = "La description de l'événement est obligatoire" });
                 }
 
+                evenement.DateDebut = EnUtc(evenement.DateDebut);
+                evenement.DateFin = EnUtc(evenement.DateFin);
+
                 if (evenement.DateDebut >= evenement.DateFin)
                 {
                     _logger.LogWarning("[CreerEvenement] Dates invalides : début {DateDebut} >= fin {DateFin}", evenement.DateDebut, evenement.DateFin);
                     return BadRequest(new { message = "La date de fin doit être postérieure à la date de début" });
                 }
 
-                if (evenement.DateDebut <= DateTime.Now)
+                if (evenement.DateDebut <= DateTime.UtcNow)
                 {
                     _logger.LogWarning("[CreerEvenement] Date de début dans le passé : {DateDebut}", evenement.DateDebut);
                     return BadRequest(new { message = "La date de début doit être dans le futur" });
@@ -1355,6 +1360,9 @@ namespace AssociationService.Controllers
                     return BadRequest(new { message = "Le code permanent de l'utilisateur est obligatoire" });
                 }
 
+                evenementModifie.DateDebut = EnUtc(evenementModifie.DateDebut);
+                evenementModifie.DateFin = EnUtc(evenementModifie.DateFin);
+
                 // 2. Validation de l'association
                 var association = await _context.Associations
                     .Include(a => a.Evenements)
@@ -1382,14 +1390,14 @@ namespace AssociationService.Controllers
                 }
 
                 // 4. Vérification du timing (événement pas encore commencé)
-                if (evenementExistant.DateDebut <= DateTime.Now)
+                if (evenementExistant.DateDebut <= DateTime.UtcNow)
                 {
                     _logger.LogWarning("[ModifierEvenement] Événement {EvenementId} a déjà commencé (début: {DateDebut})", 
                         evenementId, evenementExistant.DateDebut);
                     return BadRequest(new { 
                         message = "Impossible de modifier un événement qui a déjà commencé",
                         dateDebut = evenementExistant.DateDebut,
-                        maintenant = DateTime.Now
+                        maintenant = DateTime.UtcNow
                     });
                 }
 
@@ -1437,7 +1445,7 @@ namespace AssociationService.Controllers
                 // Validation de la date de début
                 if (evenementModifie.DateDebut != evenementExistant.DateDebut)
                 {
-                    if (evenementModifie.DateDebut <= DateTime.Now)
+                    if (evenementModifie.DateDebut <= DateTime.UtcNow)
                     {
                         _logger.LogWarning("[ModifierEvenement] Nouvelle date de début dans le passé : {DateDebut}", evenementModifie.DateDebut);
                         return BadRequest(new { message = "La nouvelle date de début doit être dans le futur" });
@@ -1564,14 +1572,14 @@ namespace AssociationService.Controllers
                 }
 
                 // 4. Vérification du timing (événement pas encore commencé)
-                if (evenementASupprimer.DateDebut <= DateTime.Now)
+                if (evenementASupprimer.DateDebut <= DateTime.UtcNow)
                 {
                     _logger.LogWarning("[SupprimerEvenement] Événement {EvenementId} a déjà commencé (début: {DateDebut})", 
                         evenementId, evenementASupprimer.DateDebut);
                     return BadRequest(new { 
                         message = "Impossible de supprimer un événement qui a déjà commencé",
                         dateDebut = evenementASupprimer.DateDebut,
-                        maintenant = DateTime.Now,
+                        maintenant = DateTime.UtcNow,
                         suggestion = "Vous pouvez annuler l'événement au lieu de le supprimer"
                     });
                 }
@@ -1763,6 +1771,13 @@ namespace AssociationService.Controllers
                 return (StatusCode(500, new { message = "Erreur lors de la vérification de l'utilisateur" }), 0);
             }
         }
+
+        private static DateTime EnUtc(DateTime valeur) => valeur.Kind switch
+        {
+            DateTimeKind.Utc => valeur,
+            DateTimeKind.Local => valeur.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(valeur, DateTimeKind.Utc)
+        };
 
         private static bool EstViolationUnique(DbUpdateException ex)
         {
