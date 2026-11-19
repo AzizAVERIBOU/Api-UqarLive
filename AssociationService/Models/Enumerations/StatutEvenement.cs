@@ -2,9 +2,9 @@ namespace AssociationService.Models.Enumerations
 {
     public enum StatutEvenement
     {
-        Planifie,
-        EnCours,
-        Termine,
-        Annule
+        Planifie = 0,
+        EnCours = 1,
+        Termine = 2,
+        Annule = 3
     }
-} 
+}
