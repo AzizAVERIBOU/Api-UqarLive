@@ -56,6 +56,7 @@ if (string.IsNullOrWhiteSpace(authService))
 builder.Services.AddHttpClient("AuthService", client =>
 {
     client.BaseAddress = new Uri(authService.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(90);
 });
 
 // Configuration du port d'écoute

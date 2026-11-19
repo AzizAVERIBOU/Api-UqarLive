@@ -13,7 +13,9 @@ namespace AssociationService.Models
         /// <para>Ne peut pas être le même que le membre dont on modifie le rôle</para>
         /// </summary>
         /// <example>TREM5678</example>
-        public string CodePermanentModifiant { get; set; }
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(20)]
+        public string CodePermanentModifiant { get; set; } = string.Empty;
 
         /// <summary>
         /// Nouveau rôle à attribuer au membre

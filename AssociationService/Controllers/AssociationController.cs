@@ -6,6 +6,8 @@ using System.Text.Json;
 using AssociationService.Models.Enumerations;
 using AssociationService.Data;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using RessourcesPartagees.Enumerations;
 
 namespace AssociationService.Controllers
 {
@@ -201,6 +203,9 @@ namespace AssociationService.Controllers
                     return BadRequest("La description est obligatoire");
                 }
 
+                demande.Nom = demande.Nom.Trim();
+                demande.CodePermanentCreateur = demande.CodePermanentCreateur.Trim();
+
                 // Vérifier si une association avec le même nom existe déjà
                 var associationExistante = await _context.Associations
                     .FirstOrDefaultAsync(a => a.Nom.ToLower() == demande.Nom.ToLower());
@@ -210,28 +215,10 @@ namespace AssociationService.Controllers
                     return BadRequest("Une association avec ce nom existe déjà");
                 }
 
-                // Vérifier si l'utilisateur existe et est connecté dans le service d'authentification
-                var client = _httpClientFactory.CreateClient("AuthService");
-                var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{demande.CodePermanentCreateur}");
-
-                if (!response.IsSuccessStatusCode)
+                var compte = await CompteActifAsync(demande.CodePermanentCreateur);
+                if (compte.Erreur != null)
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("[CreerAssociation] Utilisateur non autorisé : {CodePermanent}, Status: {Status}, Response: {Response}", 
-                        demande.CodePermanentCreateur, response.StatusCode, errorContent);
-                    
-                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    {
-                        return BadRequest("L'utilisateur n'existe pas dans le système");
-                    }
-                    else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
-                    {
-                        return BadRequest("L'utilisateur doit être connecté pour créer une association");
-                    }
-                    else
-                    {
-                        return BadRequest("L'utilisateur n'est pas autorisé à créer une association");
-                    }
+                    return compte.Erreur;
                 }
 
                 // Créer une nouvelle association à partir de la demande
@@ -247,7 +234,8 @@ namespace AssociationService.Controllers
                     Objectifs = new List<string>(),
                     Activites = new List<string>(),
                     Membres = new List<Membre>(),
-                    Evenements = new List<Evenement>()
+                    Evenements = new List<Evenement>(),
+                    DemandesAdhesion = new List<DemandeAdhesion>()
                 };
 
                 // Ajouter le créateur comme président de l'association
@@ -258,7 +246,8 @@ namespace AssociationService.Controllers
                     DateAdhesion = DateTime.UtcNow,
                     Statut = StatutMembre.Actif,
                     Responsabilites = new List<string>(),
-                    Associations = new List<string>()
+                    Associations = new List<string>(),
+                    RoleUtilisateur = (RoleUtilisateur)compte.Role
                 };
 
                 association.Membres.Add(membreCreateur);
@@ -270,6 +259,10 @@ namespace AssociationService.Controllers
                 _logger.LogInformation($"Nouvelle association créée : {association.Nom} par l'utilisateur {demande.CodePermanentCreateur}");
 
                 return CreatedAtAction(nameof(ObtenirAssociationParId), new { id = association.Id }, association);
+            }
+            catch (DbUpdateException ex) when (EstViolationUnique(ex))
+            {
+                return BadRequest("Une association avec ce nom existe déjà");
             }
             catch (Exception ex)
             {
@@ -296,6 +289,9 @@ namespace AssociationService.Controllers
                     return BadRequest("L'ID de l'association ne correspond pas à l'ID dans l'URL");
                 }
 
+                modif.Nom = modif.Nom.Trim();
+                modif.CodePermanentCreateur = modif.CodePermanentCreateur.Trim();
+
                 // Récupérer l'association existante avec ses membres
                 var associationExistante = await _context.Associations
                     .Include(a => a.Membres)
@@ -307,21 +303,13 @@ namespace AssociationService.Controllers
                     return NotFound($"Association avec l'ID {id} non trouvée");
                 }
 
-                // Vérifier si l'utilisateur existe et est connecté
-                var client = _httpClientFactory.CreateClient("AuthService");
-                var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{modif.CodePermanentCreateur}");
-
-                if (!response.IsSuccessStatusCode)
+                var compte = await CompteActifAsync(modif.CodePermanentCreateur);
+                if (compte.Erreur != null)
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("[ModifierAssociation] Utilisateur non autorisé : {CodePermanent}, Status: {Status}, Response: {Response}",
-                        modif.CodePermanentCreateur, response.StatusCode, errorContent);
-                    return BadRequest("L'utilisateur doit être connecté pour modifier une association");
+                    return compte.Erreur;
                 }
 
-                // Désérialiser la réponse pour obtenir le rôle de l'utilisateur
-                var userInfo = await JsonSerializer.DeserializeAsync<JsonElement>(await response.Content.ReadAsStreamAsync());
-                var roleUtilisateur = userInfo.GetProperty("role").GetInt32();
+                var roleUtilisateur = compte.Role;
 
                 // Vérifier les droits d'accès
                 var membreModificateur = associationExistante.Membres
@@ -345,7 +333,7 @@ namespace AssociationService.Controllers
                 if (!peutModifier)
                 {
                     _logger.LogWarning("[ModifierAssociation] Accès refusé pour l'utilisateur {CodePermanent}", modif.CodePermanentCreateur);
-                    return Forbid("Vous n'avez pas les droits nécessaires pour modifier cette association");
+                    return StatusCode(403, new { message = "Vous n'avez pas les droits nécessaires pour modifier cette association" });
                 }
 
                 // Vérifier si le nouveau nom n'est pas déjà utilisé (sauf si c'est le même que l'actuel)
@@ -385,6 +373,10 @@ namespace AssociationService.Controllers
                     association = associationExistante 
                 });
             }
+            catch (DbUpdateException ex) when (EstViolationUnique(ex))
+            {
+                return BadRequest("Une association avec ce nom existe déjà");
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[ModifierAssociation] Erreur lors de la modification de l'association {Id}", id);
@@ -416,6 +408,7 @@ namespace AssociationService.Controllers
                 var association = await _context.Associations
                     .Include(a => a.Membres)
                     .Include(a => a.Evenements)
+                    .Include(a => a.DemandesAdhesion)
                     .FirstOrDefaultAsync(a => a.Id == id);
 
                 if (association == null)
@@ -424,40 +417,13 @@ namespace AssociationService.Controllers
                     return NotFound(new { message = $"Association avec l'ID {id} non trouvée" });
                 }
 
-                // Vérifier si l'utilisateur existe et est connecté
-                var client = _httpClientFactory.CreateClient("AuthService");
-                var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{codePermanentUtilisateur}");
-
-                if (!response.IsSuccessStatusCode)
+                var compte = await CompteActifAsync(codePermanentUtilisateur);
+                if (compte.Erreur != null)
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("[SupprimerAssociation] Utilisateur non autorisé : {CodePermanent}, Status: {Status}, Response: {Response}",
-                        codePermanentUtilisateur, response.StatusCode, errorContent);
-                    return BadRequest(new { message = "L'utilisateur doit être connecté pour supprimer une association" });
+                    return compte.Erreur;
                 }
 
-                // Désérialiser la réponse pour obtenir les informations de l'utilisateur
-                var userInfo = await JsonSerializer.DeserializeAsync<JsonElement>(await response.Content.ReadAsStreamAsync());
-                
-                // Vérifier si l'utilisateur existe
-                if (!userInfo.GetProperty("existe").GetBoolean())
-                {
-                    _logger.LogWarning("[SupprimerAssociation] Utilisateur inexistant : {CodePermanent}", codePermanentUtilisateur);
-                    return BadRequest(new { message = "L'utilisateur spécifié n'existe pas" });
-                }
-
-                // Vérifier si l'utilisateur est connecté
-                if (!userInfo.GetProperty("estConnecte").GetBoolean())
-                {
-                    _logger.LogWarning("[SupprimerAssociation] Utilisateur non connecté : {CodePermanent}", codePermanentUtilisateur);
-                    return BadRequest(new { 
-                        message = "L'utilisateur doit être connecté pour supprimer une association",
-                        derniereConnexion = userInfo.GetProperty("derniereConnexion").GetString()
-                    });
-                }
-
-                // Récupérer le rôle de l'utilisateur
-                var roleUtilisateur = userInfo.GetProperty("role").GetInt32();
+                var roleUtilisateur = compte.Role;
 
                 // Vérifier les droits d'accès
                 var membreDemandeur = association.Membres
@@ -501,7 +467,9 @@ namespace AssociationService.Controllers
                     });
                 }
 
-                // Supprimer l'association (Entity Framework supprimera automatiquement les membres et événements associés)
+                _context.DemandesAdhesion.RemoveRange(association.DemandesAdhesion);
+                _context.Membres.RemoveRange(association.Membres);
+                _context.Evenements.RemoveRange(association.Evenements);
                 _context.Associations.Remove(association);
                 await _context.SaveChangesAsync();
 
@@ -623,6 +591,8 @@ namespace AssociationService.Controllers
                     return BadRequest(new { message = "La motivation est obligatoire" });
                 }
 
+                demande.CodePermanent = demande.CodePermanent.Trim();
+
                 // Vérifier si l'association existe
                 var association = await _context.Associations
                     .Include(a => a.Membres)
@@ -634,13 +604,10 @@ namespace AssociationService.Controllers
                     return NotFound(new { message = "Association non trouvée" });
                 }
 
-                // Vérifier si l'utilisateur existe (appel au service d'authentification)
-                var client = _httpClientFactory.CreateClient("AuthService");
-                var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{demande.CodePermanent}");
-
-                if (!response.IsSuccessStatusCode)
+                var compte = await CompteActifAsync(demande.CodePermanent);
+                if (compte.Erreur != null)
                 {
-                    return BadRequest(new { message = "Utilisateur non trouvé ou non connecté" });
+                    return compte.Erreur;
                 }
 
                 // Vérifier si l'utilisateur n'est pas déjà membre
@@ -688,6 +655,10 @@ namespace AssociationService.Controllers
                         nouvelleDemande.Statut
                     }
                 });
+            }
+            catch (DbUpdateException ex) when (EstViolationUnique(ex))
+            {
+                return BadRequest(new { message = "Vous avez déjà une demande d'adhésion en cours pour cette association" });
             }
             catch (Exception ex)
             {
@@ -1503,6 +1474,11 @@ namespace AssociationService.Controllers
                     modifications.Add("Statut");
                 }
 
+                if (evenementModifie.DateFin <= evenementModifie.DateDebut)
+                {
+                    return BadRequest(new { message = "La date de fin doit être postérieure à la date de début" });
+                }
+
                 // 8. Application des modifications (seulement les champs autorisés)
                 evenementExistant.DateDebut = evenementModifie.DateDebut;
                 evenementExistant.DateFin = evenementModifie.DateFin;
@@ -1751,6 +1727,47 @@ namespace AssociationService.Controllers
                 _logger.LogError(ex, "[ObtenirDemandesAdhesion] Erreur lors de la récupération des demandes d'adhésion pour l'association {Id}", id);
                 return StatusCode(500, new { message = "Une erreur est survenue lors de la récupération des demandes d'adhésion" });
             }
+        }
+
+        private async Task<(IActionResult? Erreur, int Role)> CompteActifAsync(string? codePermanent)
+        {
+            if (string.IsNullOrWhiteSpace(codePermanent))
+            {
+                return (BadRequest(new { message = "Le code permanent est obligatoire" }), 0);
+            }
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient("AuthService");
+                var response = await client.GetAsync($"api/Authentification/VerifierUtilisateur/{codePermanent}");
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return (BadRequest(new { message = "L'utilisateur n'existe pas dans le système" }), 0);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Vérification refusée : {CodePermanent}, Status: {Status}", codePermanent, response.StatusCode);
+                    return (BadRequest(new { message = "Erreur lors de la vérification de l'utilisateur" }), 0);
+                }
+
+                var utilisateur = await JsonSerializer.DeserializeAsync<JsonElement>(await response.Content.ReadAsStreamAsync());
+                var role = utilisateur.TryGetProperty("role", out var propriete) && propriete.TryGetInt32(out var valeur)
+                    ? valeur
+                    : 0;
+                return (null, role);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la vérification de l'utilisateur {CodePermanent}", codePermanent);
+                return (StatusCode(500, new { message = "Erreur lors de la vérification de l'utilisateur" }), 0);
+            }
+        }
+
+        private static bool EstViolationUnique(DbUpdateException ex)
+        {
+            return ex.InnerException is PostgresException postgres
+                && postgres.SqlState == PostgresErrorCodes.UniqueViolation;
         }
 
     }
