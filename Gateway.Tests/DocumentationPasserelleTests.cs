@@ -126,6 +126,44 @@ public class DocumentationPasserelleTests
         Assert.Contains("/marche", racine.GetProperty("info").GetProperty("description").GetString());
     }
 
+    [Fact]
+    public async Task Obtenir_PublieLesCheminsSousCafete()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Routes:0:UpstreamPathTemplate"] = "/cafete/{everything}",
+                ["Routes:0:DownstreamPathTemplate"] = "/api/Cafetaria/{everything}",
+                ["Routes:0:DownstreamScheme"] = "https",
+                ["Routes:0:DownstreamHostAndPorts:0:Host"] = "uqarlive-cafetaria.onrender.com",
+                ["Routes:0:DownstreamHostAndPorts:0:Port"] = "443"
+            })
+            .Build();
+
+        var handler = new ReponseFixe(
+            """
+            {
+              "openapi": "3.0.4",
+              "info": { "title": "Cafete", "version": "v1" },
+              "paths": {
+                "/api/Cafetaria/menuitems": { "get": { "summary": "Catalogue" } },
+                "/health": { "get": {} }
+              }
+            }
+            """);
+        using var loggerFactory = LoggerFactory.Create(_ => { });
+        var service = new DocumentationPasserelle(new UsineHttp(handler), configuration, loggerFactory.CreateLogger<DocumentationPasserelle>());
+
+        using var document = JsonDocument.Parse(await service.ObtenirAsync(CancellationToken.None));
+        var racine = document.RootElement;
+
+        Assert.Equal("https://uqarlive-cafetaria.onrender.com/swagger/v1/swagger.json", handler.Adresse?.ToString());
+        Assert.Equal("Catalogue", racine.GetProperty("paths").GetProperty("/cafete/menuitems").GetProperty("get").GetProperty("summary").GetString());
+        Assert.False(racine.GetProperty("paths").TryGetProperty("/health", out _));
+        Assert.False(racine.GetProperty("paths").TryGetProperty("/api/Cafetaria/menuitems", out _));
+        Assert.Contains("/cafete", racine.GetProperty("info").GetProperty("description").GetString());
+    }
+
     private sealed class ReponseFixe : HttpMessageHandler
     {
         private readonly string _corps;
