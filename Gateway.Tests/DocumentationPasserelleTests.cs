@@ -164,6 +164,44 @@ public class DocumentationPasserelleTests
         Assert.Contains("/cafete", racine.GetProperty("info").GetProperty("description").GetString());
     }
 
+    [Fact]
+    public async Task Obtenir_PublieLesCheminsSousAsso()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Routes:0:UpstreamPathTemplate"] = "/asso/{everything}",
+                ["Routes:0:DownstreamPathTemplate"] = "/api/Association/{everything}",
+                ["Routes:0:DownstreamScheme"] = "https",
+                ["Routes:0:DownstreamHostAndPorts:0:Host"] = "uqarlive-association.onrender.com",
+                ["Routes:0:DownstreamHostAndPorts:0:Port"] = "443"
+            })
+            .Build();
+
+        var handler = new ReponseFixe(
+            """
+            {
+              "openapi": "3.0.4",
+              "info": { "title": "Association", "version": "v1" },
+              "paths": {
+                "/api/Association/ObtenirAssociations": { "get": { "summary": "Associations" } },
+                "/health": { "get": {} }
+              }
+            }
+            """);
+        using var loggerFactory = LoggerFactory.Create(_ => { });
+        var service = new DocumentationPasserelle(new UsineHttp(handler), configuration, loggerFactory.CreateLogger<DocumentationPasserelle>());
+
+        using var document = JsonDocument.Parse(await service.ObtenirAsync(CancellationToken.None));
+        var racine = document.RootElement;
+
+        Assert.Equal("https://uqarlive-association.onrender.com/swagger/v1/swagger.json", handler.Adresse?.ToString());
+        Assert.Equal("Associations", racine.GetProperty("paths").GetProperty("/asso/ObtenirAssociations").GetProperty("get").GetProperty("summary").GetString());
+        Assert.False(racine.GetProperty("paths").TryGetProperty("/health", out _));
+        Assert.False(racine.GetProperty("paths").TryGetProperty("/api/Association/ObtenirAssociations", out _));
+        Assert.Contains("/asso", racine.GetProperty("info").GetProperty("description").GetString());
+    }
+
     private sealed class ReponseFixe : HttpMessageHandler
     {
         private readonly string _corps;
