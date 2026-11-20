@@ -142,6 +142,10 @@ public class DescriptionsSwagger : IOperationFilter
         ["Inscription"] = "Aucun jeton n'est demandé. Le rôle envoyé est ignoré : le compte devient Etudiant et EstActif passe à vrai. Un mot de passe de moins de 8 caractères, un téléphone vide ou une adresse incomplète donne 400.",
         ["Connexion"] = "Aucun jeton n'est demandé. Un mauvais mot de passe donne 401. Un compte désactivé reste désactivé et donne 401.",
         ["Deconnexion"] = "Le jeton est exigé. Aucune écriture en base : le compte reste actif. Le client doit oublier le jeton.",
-        ["VerifierUtilisateur"] = "200 si le code existe et que le compte est actif. 404 sinon. Le rôle est renvoyé sous forme de nombre : 0 Etudiant, 1 Personnel, 2 Admin."
+        ["VerifierUtilisateur"] = "200 si le code existe et que le compte est actif. 404 sinon. Le rôle est renvoyé sous forme de nombre : 0 Etudiant, 1 Personnel, 2 Admin.",
+        ["RafraichirToken"] = "Le corps est le jeton lui-même, une chaîne JSON, pas un objet. Le code est lu dans la revendication nameid. Un jeton invalide ou un compte inactif donne 401. La dernière connexion est mise à jour.",
+        ["ObtenirProfil"] = "Le jeton est exigé. Le rôle du profil est un nombre : 0 Etudiant, 1 Personnel, 2 Admin. L'adresse renvoyée est la première enregistrée, ou null.",
+        ["ModifierProfil"] = "Le jeton est exigé. Le rôle et le code permanent ne changent pas. Un téléphone vide ou un courriel déjà pris donne 400. L'adresse fournie remplace la première, ou en crée une.",
+        ["ChangerMotDePasse"] = "Le jeton est exigé. Moins de 8 caractères, une confirmation différente ou le même mot de passe que l'ancien donne 400."
     };
 }

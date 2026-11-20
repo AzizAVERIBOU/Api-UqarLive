@@ -38,13 +38,15 @@ Le contrôleur est `api/Authentification`. Par la passerelle, le préfixe devien
 | POST | `/Inscription` | Crée un compte Étudiant |
 | POST | `/Connexion` | Retourne un jeton |
 | POST | `/RafraichirToken` | Renouvelle le jeton |
-| POST | `/Deconnexion` | Clôt la session |
+| POST | `/Deconnexion` | Le client oublie le jeton. Rien n'est révoqué en base |
 | GET | `/ObtenirProfilUtilisateur` | Profil du jeton |
 | PUT | `/MettreAJourProfilUtilisateur` | Met à jour le profil |
 | POST | `/ChangerMotDePasse` | Change le mot de passe |
 | GET | `/VerifierUtilisateur/{codePermanent}` | 200 si le compte existe et est actif, 404 sinon |
 
-`VerifierUtilisateur` ne dit pas si une session est ouverte. Le rôle dans la réponse est un nombre : 0 Étudiant, 1 Personnel, 2 Admin.
+`VerifierUtilisateur` ne dit pas si une session est ouverte. Le rôle y est un nombre, comme dans le profil : 0 Étudiant, 1 Personnel, 2 Admin. Dans le corps du jeton, le même rôle est le texte `Etudiant`, `Personnel` ou `Admin`. En base, le nom est stocké.
+
+`POST /RafraichirToken` reçoit le jeton brut, une chaîne JSON, et lit la revendication `nameid`.
 
 Les tests sont dans `AuthentificationService.Tests`. Ils démarrent un PostgreSQL 18 jetable.
 

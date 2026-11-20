@@ -14,6 +14,7 @@ namespace AuthentificationService.Models.Auth
             public string Email { get; set; }
             public string Nom { get; set; }
             public string Prenom { get; set; }
+            /// <summary>Nom du rôle, pas son nombre : Etudiant, Personnel ou Admin.</summary>
             public string Role { get; set; }
         }
     }

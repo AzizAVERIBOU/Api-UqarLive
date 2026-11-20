@@ -15,6 +15,7 @@ namespace AuthentificationService.Models
         public int AnneeDebut { get; set; }
         public int AnneeFin { get; set; }
         public string Telephone { get; set; }
+        /// <summary>Ignoré à l'inscription : le compte enregistré est toujours Étudiant.</summary>
         public RoleUtilisateur Role { get; set; }
         public Adresse Adresse { get; set; }
     }
