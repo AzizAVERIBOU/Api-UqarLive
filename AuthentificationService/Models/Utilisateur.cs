@@ -26,6 +26,10 @@ namespace AuthentificationService.Models
         [Required]
         public byte[] MotDePasseSalt { get; set; }
 
+        /// <summary>
+        /// Rôle du compte. En base, le nom est stocké : Etudiant, Personnel ou Admin.
+        /// L'inscription publique force Etudiant.
+        /// </summary>
         [Required]
         public RoleUtilisateur Role { get; set; }
 
@@ -39,7 +43,6 @@ namespace AuthentificationService.Models
         public DateTime DateCreation { get; set; }
         public bool EstActif { get; set; }
 
-        // Propriété de navigation pour la collection d'adresses
         public virtual ICollection<Adresse> Adresses { get; set; }
     }
 } 

@@ -76,7 +76,6 @@ namespace AuthentificationService.Controllers
                     return BadRequest(new { message = "L'adresse est requise." });
                 }
 
-                // Vérifier si l'utilisateur existe déjà
                 _logger.LogInformation("[Inscription] Vérification de l'existence de l'utilisateur {Email} ou code permanent {CodePermanent}", demande.Email, demande.CodePermanent);
                 Console.WriteLine($"[Inscription] Vérification de l'existence de l'utilisateur {demande.Email} ou code permanent {demande.CodePermanent}");
                 if (await _context.Utilisateurs.AnyAsync(u => u.Email == demande.Email || u.CodePermanent == demande.CodePermanent))
@@ -86,12 +85,10 @@ namespace AuthentificationService.Controllers
                     return BadRequest(new { message = "Un utilisateur avec cet email ou ce code permanent existe déjà." });
                 }
 
-                // Créer le hash du mot de passe
                 _logger.LogInformation("[Inscription] Création du hash du mot de passe pour {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Création du hash du mot de passe pour {demande.Email}");
                 var (motDePasseHash, motDePasseSalt) = _authService.HasherMotDePasse(demande.MotDePasse);
 
-                // Créer le nouvel utilisateur
                 _logger.LogInformation("[Inscription] Création de l'objet Utilisateur pour {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Création de l'objet Utilisateur pour {demande.Email}");
                 var nouvelUtilisateur = new Utilisateur
@@ -114,7 +111,6 @@ namespace AuthentificationService.Controllers
                     EstActif = true
                 };
 
-                // Créer l'adresse
                 var adresse = new Adresse
                 {
                     NumeroCivique = demande.Adresse.NumeroCivique,
@@ -126,39 +122,30 @@ namespace AuthentificationService.Controllers
                     CodePermanentUtilisateur = demande.CodePermanent
                 };
 
-                // Ajouter l'utilisateur et l'adresse à la base de données
                 _logger.LogInformation("[Inscription] Ajout de l'utilisateur et de l'adresse à la base de données : {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Ajout de l'utilisateur et de l'adresse à la base de données : {demande.Email}");
                 
-                // Sauvegarder dans une transaction
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // D'abord sauvegarder l'utilisateur
                     await _context.Utilisateurs.AddAsync(nouvelUtilisateur);
                     await _context.SaveChangesAsync();
 
-                    // Ensuite sauvegarder l'adresse
                     await _context.Adresses.AddAsync(adresse);
                     await _context.SaveChangesAsync();
 
-                    // Valider la transaction
                     await transaction.CommitAsync();
                 }
                 catch
                 {
-                    // En cas d'erreur, annuler la transaction
                     await transaction.RollbackAsync();
                     throw;
                 }
 
-                // Générer le token JWT
                 _logger.LogInformation("[Inscription] Génération du token JWT pour {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Génération du token JWT pour {demande.Email}");
                 var reponseToken = _jwtToken.GenererToken(nouvelUtilisateur);
                 reponseToken.Message = "Inscription réussie";
-
-                // Envoyer une notification de bienvenue
 
                 _logger.LogInformation("[Inscription] Inscription terminée avec succès pour {Email}", demande.Email);
                 Console.WriteLine($"[Inscription] Inscription terminée avec succès pour {demande.Email}");
@@ -195,9 +182,6 @@ namespace AuthentificationService.Controllers
                 utilisateur.DerniereConnexion = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                // Envoyer une notification de connexion 
-                // j'ai supprimer les notifications , ce service n'est pas demandé dans le cahier des charges
-
                 var reponseToken = _jwtToken.GenererToken(utilisateur);
                 reponseToken.Message = "Connexion réussie";
                 return Ok(reponseToken);
@@ -219,7 +203,6 @@ namespace AuthentificationService.Controllers
                 _logger.LogInformation("[RafraichirToken] Début de la méthode");
                 Console.WriteLine("[RafraichirToken] Début de la méthode");
 
-                // Vérifier si le token est valide
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_configuration["JwtSettings:SecretKey"]);
 
@@ -237,7 +220,6 @@ namespace AuthentificationService.Controllers
                     var jwtToken = (JwtSecurityToken)validatedToken;
                     var codePermanent = jwtToken.Claims.First(x => x.Type == "nameid").Value;
 
-                    // Vérifier si l'utilisateur existe et est actif
                     var utilisateur = await _context.Utilisateurs
                         .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent && u.EstActif);
 
@@ -247,11 +229,9 @@ namespace AuthentificationService.Controllers
                         return Unauthorized(new { message = "Token invalide ou utilisateur inactif" });
                     }
 
-                    // Mettre à jour la dernière connexion
                     utilisateur.DerniereConnexion = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
 
-                    // Générer un nouveau token
                     var reponseToken = _jwtToken.GenererToken(utilisateur);
                     reponseToken.Message = "Token rafraîchi avec succès";
 
@@ -302,7 +282,6 @@ namespace AuthentificationService.Controllers
             {
                 _logger.LogInformation("[ObtenirProfil] Début de la méthode");
                 
-                // Récupérer le code permanent de l'utilisateur depuis le token
                 var codePermanent = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(codePermanent))
                 {
@@ -310,7 +289,6 @@ namespace AuthentificationService.Controllers
                     return Unauthorized(new { message = "Token invalide" });
                 }
 
-                // Récupérer l'utilisateur avec son adresse
                 var utilisateur = await _context.Utilisateurs
                     .Include(u => u.Adresses)
                     .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
@@ -321,10 +299,8 @@ namespace AuthentificationService.Controllers
                     return NotFound(new { message = "Utilisateur non trouvé" });
                 }
 
-                // Créer la réponse avec les informations nécessaires
                 var profil = new
                 {
-                    // Informations de base
                     CodePermanent = utilisateur.CodePermanent,
                     Email = utilisateur.Email,
                     Nom = utilisateur.Nom,
@@ -332,13 +308,11 @@ namespace AuthentificationService.Controllers
                     Telephone = utilisateur.Telephone,
                     Role = utilisateur.Role,
 
-                    // Informations académiques
                     Programme = utilisateur.Programme,
                     Faculte = utilisateur.Faculte,
                     AnneeDebut = utilisateur.AnneeDebut,
                     AnneeFin = utilisateur.AnneeFin,
 
-                    // Informations de l'adresse
                     Adresse = utilisateur.Adresses.FirstOrDefault() != null ? new
                     {
                         NumeroCivique = utilisateur.Adresses.First().NumeroCivique,
@@ -349,7 +323,6 @@ namespace AuthentificationService.Controllers
                         CodePostal = utilisateur.Adresses.First().CodePostal
                     } : null,
 
-                    // Informations de dates
                     DateInscription = utilisateur.DateInscription,
                     DerniereConnexion = utilisateur.DerniereConnexion,
                     EstActif = utilisateur.EstActif
@@ -376,7 +349,6 @@ namespace AuthentificationService.Controllers
             {
                 _logger.LogInformation("[ModifierProfil] Début de la méthode");
                 
-                // Récupérer le code permanent de l'utilisateur depuis le token
                 var codePermanent = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(codePermanent))
                 {
@@ -384,7 +356,6 @@ namespace AuthentificationService.Controllers
                     return Unauthorized(new { message = "Token invalide" });
                 }
 
-                // Récupérer l'utilisateur avec son adresse
                 var utilisateur = await _context.Utilisateurs
                     .Include(u => u.Adresses)
                     .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
@@ -395,7 +366,6 @@ namespace AuthentificationService.Controllers
                     return NotFound(new { message = "Utilisateur non trouvé" });
                 }
 
-                // Vérifier si l'email est déjà utilisé par un autre utilisateur
                 if (demande.Email != utilisateur.Email)
                 {
                     var emailExiste = await _context.Utilisateurs
@@ -413,7 +383,6 @@ namespace AuthentificationService.Controllers
                     return BadRequest(new { message = "Le numéro de téléphone est requis." });
                 }
 
-                // Mettre à jour les informations de base
                 utilisateur.Email = demande.Email;
                 utilisateur.Telephone = demande.Telephone;
                 utilisateur.Nom = demande.Nom;
@@ -421,19 +390,16 @@ namespace AuthentificationService.Controllers
                 utilisateur.Programme = demande.Programme;
                 utilisateur.Faculte = demande.Faculte;
                 
-                // Conversion explicite des années nullable en int
                 if (demande.AnneeDebut.HasValue)
                     utilisateur.AnneeDebut = demande.AnneeDebut.Value;
                 if (demande.AnneeFin.HasValue)
                     utilisateur.AnneeFin = demande.AnneeFin.Value;
 
-                // Mettre à jour l'adresse
                 if (demande.Adresse != null)
                 {
                     var adresseExistante = utilisateur.Adresses.FirstOrDefault();
                     if (adresseExistante != null)
                     {
-                        // Mettre à jour l'adresse existante
                         adresseExistante.NumeroCivique = demande.Adresse.NumeroCivique;
                         adresseExistante.Rue = demande.Adresse.Rue;
                         adresseExistante.Appartement = demande.Adresse.Appartement;
@@ -443,7 +409,6 @@ namespace AuthentificationService.Controllers
                     }
                     else
                     {
-                        // Créer une nouvelle adresse
                         var nouvelleAdresse = new Adresse
                         {
                             NumeroCivique = demande.Adresse.NumeroCivique,
@@ -458,14 +423,12 @@ namespace AuthentificationService.Controllers
                     }
                 }
 
-                // Marquer l'entité comme modifiée
                 _context.Entry(utilisateur).State = EntityState.Modified;
                 if (utilisateur.Adresses.Any())
                 {
                     _context.Entry(utilisateur.Adresses.First()).State = EntityState.Modified;
                 }
 
-                // Sauvegarder les modifications
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("[ModifierProfil] Profil mis à jour avec succès pour {CodePermanent}", codePermanent);
@@ -489,7 +452,6 @@ namespace AuthentificationService.Controllers
             {
                 _logger.LogInformation("[ChangerMotDePasse] Début de la méthode");
                 
-                // Récupérer le code permanent de l'utilisateur depuis le token
                 var codePermanent = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(codePermanent))
                 {
@@ -502,21 +464,18 @@ namespace AuthentificationService.Controllers
                     return BadRequest(new { message = "Le mot de passe doit contenir au moins 8 caractères." });
                 }
 
-                // Vérifier que les mots de passe correspondent
                 if (demande.NouveauMotDePasse != demande.ConfirmationMotDePasse)
                 {
                     _logger.LogWarning("[ChangerMotDePasse] Les mots de passe ne correspondent pas");
                     return BadRequest(new { message = "Le nouveau mot de passe et la confirmation ne correspondent pas" });
                 }
 
-                // Vérifier que le nouveau mot de passe est différent de l'ancien
                 if (demande.NouveauMotDePasse == demande.AncienMotDePasse)
                 {
                     _logger.LogWarning("[ChangerMotDePasse] Le nouveau mot de passe est identique à l'ancien");
                     return BadRequest(new { message = "Le nouveau mot de passe doit être différent de l'ancien" });
                 }
 
-                // Récupérer l'utilisateur
                 var utilisateur = await _context.Utilisateurs
                     .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
 
@@ -526,23 +485,17 @@ namespace AuthentificationService.Controllers
                     return NotFound(new { message = "Utilisateur non trouvé" });
                 }
 
-                // Vérifier l'ancien mot de passe
                 if (!_authService.VerifierMotDePasse(demande.AncienMotDePasse, utilisateur.MotDePasseHash, utilisateur.MotDePasseSalt))
                 {
                     _logger.LogWarning("[ChangerMotDePasse] Ancien mot de passe incorrect pour {CodePermanent}", codePermanent);
                     return BadRequest(new { message = "L'ancien mot de passe est incorrect" });
                 }
 
-                // Générer le nouveau hash du mot de passe
                 var (nouveauHash, nouveauSalt) = _authService.HasherMotDePasse(demande.NouveauMotDePasse);
 
-                // Mettre à jour le mot de passe
                 utilisateur.MotDePasseHash = nouveauHash;
                 utilisateur.MotDePasseSalt = nouveauSalt;
                 await _context.SaveChangesAsync();
-
-                // Envoyer une notification de changement de mot de passe
-                // TODO: Envoyer une notification de changement de mot de passe
 
                 _logger.LogInformation("[ChangerMotDePasse] Mot de passe changé avec succès pour {CodePermanent}", codePermanent);
                 return Ok(new { message = "Mot de passe changé avec succès" });
@@ -563,7 +516,6 @@ namespace AuthentificationService.Controllers
             {
                 _logger.LogInformation("[VerifierUtilisateur] Vérification de l'utilisateur {CodePermanent}", codePermanent);
 
-                // Vérifier si l'utilisateur existe dans la base de données
                 var utilisateur = await _context.Utilisateurs
                     .FirstOrDefaultAsync(u => u.CodePermanent == codePermanent);
 
