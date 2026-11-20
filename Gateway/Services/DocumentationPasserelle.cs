@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json.Nodes;
 
 namespace Gateway.Services;
@@ -70,32 +71,46 @@ public class DocumentationPasserelle
         }
 
         var adresse = AdresseSwagger(route["DownstreamScheme"], hote, route["DownstreamHostAndPorts:0:Port"]);
-        try
+        var client = _clients.CreateClient("DocumentationAval");
+        for (var essai = 1; essai <= 3; essai++)
         {
-            var client = _clients.CreateClient("DocumentationAval");
-            using var reponse = await client.GetAsync(adresse, annulation);
-            if (!reponse.IsSuccessStatusCode)
+            try
             {
-                _logger.LogWarning("Swagger aval indisponible : {Adresse} {Statut}", adresse, (int)reponse.StatusCode);
-                return Injoignable(titre, prefixeAmont);
+                using var reponse = await client.GetAsync(adresse, annulation);
+                if (reponse.IsSuccessStatusCode)
+                {
+                    var json = await reponse.Content.ReadAsStringAsync(annulation);
+                    var recu = JsonNode.Parse(json)?.AsObject();
+                    if (recu == null)
+                    {
+                        return Injoignable(titre, prefixeAmont);
+                    }
+
+                    var document = Reecrire(recu, Prefixe(modeleAval), prefixeAmont);
+                    Completer(document, titre, prefixeAmont, joignable: true);
+                    return Serialiser(document);
+                }
+
+                _logger.LogWarning("Swagger aval indisponible : {Adresse} {Statut} essai {Essai}", adresse, (int)reponse.StatusCode, essai);
+                if (!EstReveil(reponse.StatusCode) || essai == 3)
+                {
+                    return Injoignable(titre, prefixeAmont);
+                }
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+            {
+                _logger.LogWarning(ex, "Swagger aval illisible : {Adresse} essai {Essai}", adresse, essai);
+                var delaiEpuise = ex is TaskCanceledException && !annulation.IsCancellationRequested;
+                if (essai == 3 || (delaiEpuise && essai == 2))
+                {
+                    return Injoignable(titre, prefixeAmont);
+                }
             }
 
-            var json = await reponse.Content.ReadAsStringAsync(annulation);
-            var recu = JsonNode.Parse(json)?.AsObject();
-            if (recu == null)
-            {
-                return Injoignable(titre, prefixeAmont);
-            }
+            await Task.Delay(TimeSpan.FromSeconds(3), annulation);
+        }
 
-            var document = Reecrire(recu, Prefixe(modeleAval), prefixeAmont);
-            Completer(document, titre, prefixeAmont, joignable: true);
-            return Serialiser(document);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
-        {
-            _logger.LogWarning(ex, "Swagger aval illisible : {Adresse}", adresse);
-            return Injoignable(titre, prefixeAmont);
-        }
+        return Injoignable(titre, prefixeAmont);
     }
 
     internal static JsonObject Reecrire(JsonObject source, string prefixeAval, string prefixeAmont)
@@ -152,7 +167,7 @@ public class DocumentationPasserelle
         info["version"] ??= "1.0";
         info["description"] = joignable
             ? "Try it out appelle cette passerelle. Les chemins commencent par " + prefixe + "."
-            : "Ce service est injoignable. La page reste ouverte. Les chemins commenceront par " + prefixe + ".";
+            : "L'instance gratuite se réveille. Rechargez cette page dans un instant. Les chemins commenceront par " + prefixe + ".";
         document["servers"] = new JsonArray(new JsonObject { ["url"] = "/" });
     }
 
@@ -169,6 +184,9 @@ public class DocumentationPasserelle
 
     private static string Serialiser(JsonObject document) =>
         document.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+    private static bool EstReveil(HttpStatusCode statut) =>
+        statut is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout;
 
     private static string Titre(string prefixe) =>
         Titres.TryGetValue(prefixe, out var titre) ? titre : prefixe.TrimStart('/');

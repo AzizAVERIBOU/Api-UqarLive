@@ -247,10 +247,47 @@ public class DocumentationPasserelleTests
 
         using var biblio = Lire(await service.ObtenirAsync("biblio", CancellationToken.None));
         Assert.Equal("UQAR Live — Bibliothèque", biblio.RootElement.GetProperty("info").GetProperty("title").GetString());
-        Assert.Contains("injoignable", biblio.RootElement.GetProperty("info").GetProperty("description").GetString());
+        Assert.Contains("se réveille", biblio.RootElement.GetProperty("info").GetProperty("description").GetString());
         Assert.False(biblio.RootElement.GetProperty("paths").EnumerateObject().Any());
 
         Assert.Null(await service.ObtenirAsync("inconnu", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Obtenir_RelitUneInstanceQuiSeReveille()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Routes:0:UpstreamPathTemplate"] = "/biblio/{everything}",
+                ["Routes:0:DownstreamPathTemplate"] = "/api/Bibliotheque/{everything}",
+                ["Routes:0:DownstreamScheme"] = "https",
+                ["Routes:0:DownstreamHostAndPorts:0:Host"] = "uqarlive-bibliotheque.onrender.com",
+                ["Routes:0:DownstreamHostAndPorts:0:Port"] = "443"
+            })
+            .Build();
+
+        var essais = 0;
+        var handler = new ReponsesParHote(_ =>
+        {
+            essais++;
+            return essais == 1
+                ? (HttpStatusCode.BadGateway, "")
+                : (HttpStatusCode.OK, """
+                {
+                  "openapi": "3.0.4",
+                  "info": { "title": "Bibliotheque", "version": "v1" },
+                  "paths": { "/api/Bibliotheque/salles": { "get": { "summary": "Salles" } } }
+                }
+                """);
+        });
+        using var loggerFactory = LoggerFactory.Create(_ => { });
+        var service = new DocumentationPasserelle(new UsineHttp(handler), configuration, loggerFactory.CreateLogger<DocumentationPasserelle>());
+
+        using var document = Lire(await service.ObtenirAsync("biblio", CancellationToken.None));
+
+        Assert.Equal(2, essais);
+        Assert.Equal("Salles", document.RootElement.GetProperty("paths").GetProperty("/biblio/salles").GetProperty("get").GetProperty("summary").GetString());
     }
 
     private static JsonDocument Lire(string? json)

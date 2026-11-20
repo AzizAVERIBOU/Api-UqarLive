@@ -39,7 +39,7 @@ Les méthodes publiées sont GET, POST, PUT et DELETE. Le fichier est `ocelot.js
 
 Pas de modèle ni de base. Le port est `PORT`, sinon `5000`. Aucune redirection HTTPS. `/`, `/health` et `/swagger` sont répondues ici et ne partent pas vers un service.
 
-`GET /` liste ces préfixes. `GET /swagger` propose un document par service : `/swagger/auth.json`, `/swagger/biblio.json`, `/swagger/marche.json`, `/swagger/cafete.json` et `/swagger/asso.json`. Chaque document est lu sur le `/swagger/v1/swagger.json` du service, avec un délai de 60 secondes, et ne garde que les chemins de son contrôleur. Le `/health` du service n'y apparaît pas. « Try it out » appelle cette passerelle. Un service injoignable garde sa page, avec une liste de chemins vide. Une clé qui n'est pas un préfixe répond 404.
+`GET /` liste ces préfixes. `GET /swagger` propose un document par service : `/swagger/auth.json`, `/swagger/biblio.json`, `/swagger/marche.json`, `/swagger/cafete.json` et `/swagger/asso.json`. Chaque document est lu sur le `/swagger/v1/swagger.json` du service, avec un délai de 60 secondes, et ne garde que les chemins de son contrôleur. Le `/health` du service n'y apparaît pas. « Try it out » appelle cette passerelle. Une instance endormie est relue jusqu'à trois fois. Si elle ne répond toujours pas, la page dit qu'elle se réveille et demande de recharger. Une clé qui n'est pas un préfixe répond 404.
 
 Les tests de `Gateway.Tests` réécrivent ces documents en mémoire. Ils ne démarrent pas PostgreSQL.
 
