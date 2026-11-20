@@ -32,6 +32,12 @@ public class ContratAuthentificationTests
         Assert.Equal("Crée un compte étudiant et renvoie un jeton.", inscription.GetProperty("summary").GetString());
         Assert.False(inscription.TryGetProperty("security", out _));
 
+        var rafraichir = document.GetProperty("paths").GetProperty("/api/Authentification/RafraichirToken").GetProperty("post");
+        Assert.Contains("chaîne JSON", rafraichir.GetProperty("description").GetString());
+
+        var profil = document.GetProperty("paths").GetProperty("/api/Authentification/ObtenirProfilUtilisateur").GetProperty("get");
+        Assert.Contains("nombre", profil.GetProperty("description").GetString());
+
         var deconnexion = document.GetProperty("paths").GetProperty("/api/Authentification/Deconnexion").GetProperty("post");
         Assert.True(deconnexion.TryGetProperty("security", out _));
         Assert.True(document.GetProperty("paths").TryGetProperty("/health", out _));

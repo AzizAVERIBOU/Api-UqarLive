@@ -31,9 +31,14 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+var documentation = app.Services.GetRequiredService<DocumentationPasserelle>();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/passerelle.json", "UQAR Live");
+    foreach (var entree in documentation.Entrees())
+    {
+        options.SwaggerEndpoint($"/swagger/{entree.Cle}.json", entree.Titre);
+    }
+
     options.DocumentTitle = "UQAR Live";
     options.DefaultModelsExpandDepth(2);
 });
@@ -50,9 +55,15 @@ app.MapGet("/", () => Results.Ok(new
     association = "/asso"
 }));
 app.MapGet("/health", () => Results.Ok("Healthy"));
-app.MapGet("/swagger/passerelle.json", async (DocumentationPasserelle documentation, CancellationToken annulation) =>
-    Results.Content(await documentation.ObtenirAsync(annulation), "application/json"));
+app.MapGet("/swagger/{cle}.json", async (string cle, DocumentationPasserelle documentation, CancellationToken annulation) =>
+{
+    var json = await documentation.ObtenirAsync(cle, annulation);
+    return json == null
+        ? Results.NotFound()
+        : Results.Content(json, "application/json");
+});
 
+// /, /health et /swagger restent sur la passerelle.
 app.MapWhen(
     contexte => !contexte.Request.Path.StartsWithSegments("/swagger")
                 && contexte.Request.Path != "/"

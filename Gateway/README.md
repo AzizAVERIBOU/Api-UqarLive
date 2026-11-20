@@ -1,6 +1,6 @@
 # Passerelle
 
-Point d'entrée d'UQAR Live. Ocelot route les appels et le Swagger central réécrit les chemins des services.
+Point d'entrée d'UQAR Live. Ocelot route les appels. Swagger affiche un document par service et réécrit ses chemins.
 
 Public : [https://uqarlive-gateway.onrender.com](https://uqarlive-gateway.onrender.com)
 
@@ -37,7 +37,9 @@ docker build -t uqarlive-gateway -f Gateway/Dockerfile .
 
 Les méthodes publiées sont GET, POST, PUT et DELETE. Le fichier est `ocelot.json`.
 
-`GET /` liste ces préfixes. `GET /swagger/passerelle.json` assemble les documents des services joignables. Un service endormi ou injoignable est ignoré, la page reste ouverte. « Try it out » appelle cette passerelle.
+Pas de modèle ni de base. Le port est `PORT`, sinon `5000`. Aucune redirection HTTPS. `/`, `/health` et `/swagger` sont répondues ici et ne partent pas vers un service.
+
+`GET /` liste ces préfixes. `GET /swagger` propose un document par service : `/swagger/auth.json`, `/swagger/biblio.json`, `/swagger/marche.json`, `/swagger/cafete.json` et `/swagger/asso.json`. Chaque document est lu sur le `/swagger/v1/swagger.json` du service, avec un délai de 60 secondes, et ne garde que les chemins de son contrôleur. Le `/health` du service n'y apparaît pas. « Try it out » appelle cette passerelle. Un service injoignable garde sa page, avec une liste de chemins vide. Une clé qui n'est pas un préfixe répond 404.
 
 Les tests de `Gateway.Tests` réécrivent ces documents en mémoire. Ils ne démarrent pas PostgreSQL.
 

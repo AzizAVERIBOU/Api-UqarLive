@@ -239,7 +239,7 @@ Aucun job ne publie ni ne déploie les services. Le déploiement se fait à la m
 
 ## Documentation des API
 
-La page à montrer est le Swagger de la passerelle : [https://uqarlive-gateway.onrender.com/swagger](https://uqarlive-gateway.onrender.com/swagger). Elle reprend les contrats des services joignables et réécrit les chemins : `/api/Authentification/Connexion` devient `/auth/Connexion`, `/api/Bibliotheque/salles` devient `/biblio/salles`, `/api/Market/produits` devient `/marche/produits`, `/api/Cafetaria/menuitems` devient `/cafete/menuitems`, `/api/Association/ObtenirAssociations` devient `/asso/ObtenirAssociations`. « Try it out » appelle la passerelle. Un service injoignable est ignoré, la page reste ouverte.
+La page à montrer est le Swagger de la passerelle : [https://uqarlive-gateway.onrender.com/swagger](https://uqarlive-gateway.onrender.com/swagger). La liste en haut propose un document par service. Chaque document réécrit les chemins de ce service seulement : `/api/Authentification/Connexion` devient `/auth/Connexion`, `/api/Bibliotheque/salles` devient `/biblio/salles`, `/api/Market/produits` devient `/marche/produits`, `/api/Cafetaria/menuitems` devient `/cafete/menuitems`, `/api/Association/ObtenirAssociations` devient `/asso/ObtenirAssociations`. « Try it out » appelle la passerelle. Un service injoignable garde sa page, avec une liste de chemins vide.
 
 Chaque service publié a aussi son Swagger : [authentification](https://api-uqarlive.onrender.com/swagger), [bibliothèque](https://uqarlive-bibliotheque.onrender.com/swagger), [marché](https://uqarlive-marche.onrender.com/swagger), [cafétéria](https://uqarlive-cafetaria.onrender.com/swagger), [associations](https://uqarlive-association.onrender.com/swagger).
 
