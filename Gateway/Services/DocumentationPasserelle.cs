@@ -2,8 +2,19 @@ using System.Text.Json.Nodes;
 
 namespace Gateway.Services;
 
+public sealed record EntreeDocumentation(string Cle, string Titre);
+
 public class DocumentationPasserelle
 {
+    private static readonly Dictionary<string, string> Titres = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["/auth"] = "Authentification",
+        ["/biblio"] = "Bibliothèque",
+        ["/marche"] = "Marché",
+        ["/cafete"] = "Cafétéria",
+        ["/asso"] = "Association"
+    };
+
     private readonly IHttpClientFactory _clients;
     private readonly IConfiguration _configuration;
     private readonly ILogger<DocumentationPasserelle> _logger;
@@ -18,71 +29,73 @@ public class DocumentationPasserelle
         _logger = logger;
     }
 
-    public async Task<string> ObtenirAsync(CancellationToken annulation)
+    public IReadOnlyList<EntreeDocumentation> Entrees()
     {
-        JsonObject? document = null;
-
+        var liste = new List<EntreeDocumentation>();
         foreach (var route in _configuration.GetSection("Routes").GetChildren())
         {
-            var modeleAmont = route["UpstreamPathTemplate"];
-            var modeleAval = route["DownstreamPathTemplate"];
-            var hote = route["DownstreamHostAndPorts:0:Host"];
-            if (string.IsNullOrWhiteSpace(modeleAmont)
-                || string.IsNullOrWhiteSpace(modeleAval)
-                || string.IsNullOrWhiteSpace(hote))
+            var modele = route["UpstreamPathTemplate"];
+            if (string.IsNullOrWhiteSpace(modele))
             {
                 continue;
             }
 
-            var adresse = AdresseSwagger(route["DownstreamScheme"], hote, route["DownstreamHostAndPorts:0:Port"]);
-            try
+            var prefixe = Prefixe(modele);
+            if (prefixe.Length <= 1)
             {
-                var client = _clients.CreateClient("DocumentationAval");
-                using var reponse = await client.GetAsync(adresse, annulation);
-                if (!reponse.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("Swagger aval indisponible : {Adresse} {Statut}", adresse, (int)reponse.StatusCode);
-                    continue;
-                }
-
-                var json = await reponse.Content.ReadAsStringAsync(annulation);
-                var recu = JsonNode.Parse(json)?.AsObject();
-                if (recu == null)
-                {
-                    continue;
-                }
-
-                var reecrit = Reecrire(
-                    recu,
-                    Prefixe(modeleAval),
-                    Prefixe(modeleAmont));
-                document = Fusionner(document, reecrit);
+                continue;
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
-            {
-                _logger.LogWarning(ex, "Swagger aval illisible : {Adresse}", adresse);
-            }
+
+            liste.Add(new EntreeDocumentation(prefixe.TrimStart('/'), Titre(prefixe)));
         }
 
-        document ??= new JsonObject
-        {
-            ["openapi"] = "3.0.4",
-            ["paths"] = new JsonObject()
-        };
+        return liste;
+    }
 
-        if (document["info"] is not JsonObject info)
+    public async Task<string?> ObtenirAsync(string cle, CancellationToken annulation)
+    {
+        var route = Trouver(cle);
+        if (route == null)
         {
-            info = new JsonObject();
-            document["info"] = info;
+            return null;
         }
 
-        info["title"] = "UQAR Live";
-        info["version"] = "1.0";
-        info["description"] =
-            "Documentation de la passerelle. Try it out appelle cette adresse : /auth rejoint l'authentification, /biblio rejoint la bibliothèque, /marche rejoint le marché, /cafete rejoint la cafétéria, /asso rejoint les associations. Un service injoignable est ignoré.";
-        document["servers"] = new JsonArray(new JsonObject { ["url"] = "/" });
+        var prefixeAmont = Prefixe(route["UpstreamPathTemplate"]!);
+        var titre = Titre(prefixeAmont);
+        var modeleAval = route["DownstreamPathTemplate"];
+        var hote = route["DownstreamHostAndPorts:0:Host"];
+        if (string.IsNullOrWhiteSpace(modeleAval) || string.IsNullOrWhiteSpace(hote))
+        {
+            return Injoignable(titre, prefixeAmont);
+        }
 
-        return document.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        var adresse = AdresseSwagger(route["DownstreamScheme"], hote, route["DownstreamHostAndPorts:0:Port"]);
+        try
+        {
+            var client = _clients.CreateClient("DocumentationAval");
+            using var reponse = await client.GetAsync(adresse, annulation);
+            if (!reponse.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Swagger aval indisponible : {Adresse} {Statut}", adresse, (int)reponse.StatusCode);
+                return Injoignable(titre, prefixeAmont);
+            }
+
+            var json = await reponse.Content.ReadAsStringAsync(annulation);
+            var recu = JsonNode.Parse(json)?.AsObject();
+            if (recu == null)
+            {
+                return Injoignable(titre, prefixeAmont);
+            }
+
+            var document = Reecrire(recu, Prefixe(modeleAval), prefixeAmont);
+            Completer(document, titre, prefixeAmont, joignable: true);
+            return Serialiser(document);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            _logger.LogWarning(ex, "Swagger aval illisible : {Adresse}", adresse);
+            return Injoignable(titre, prefixeAmont);
+        }
     }
 
     internal static JsonObject Reecrire(JsonObject source, string prefixeAval, string prefixeAmont)
@@ -107,42 +120,58 @@ public class DocumentationPasserelle
         return copie;
     }
 
-    private static JsonObject Fusionner(JsonObject? document, JsonObject ajout)
+    private IConfigurationSection? Trouver(string cle)
     {
-        if (document == null)
+        var cherche = "/" + cle.Trim().Trim('/');
+        foreach (var route in _configuration.GetSection("Routes").GetChildren())
         {
-            return ajout;
-        }
-
-        if (ajout["paths"] is JsonObject chemins)
-        {
-            var destination = document["paths"] as JsonObject ?? new JsonObject();
-            foreach (var chemin in chemins)
+            var modele = route["UpstreamPathTemplate"];
+            if (string.IsNullOrWhiteSpace(modele))
             {
-                destination[chemin.Key] = chemin.Value?.DeepClone();
+                continue;
             }
 
-            document["paths"] = destination;
-        }
-
-        if (ajout["components"]?["schemas"] is JsonObject schemas)
-        {
-            var composants = document["components"] as JsonObject ?? new JsonObject();
-            var destination = composants["schemas"] as JsonObject ?? new JsonObject();
-            foreach (var schema in schemas)
+            if (string.Equals(Prefixe(modele), cherche, StringComparison.OrdinalIgnoreCase))
             {
-                if (!destination.ContainsKey(schema.Key))
-                {
-                    destination[schema.Key] = schema.Value?.DeepClone();
-                }
+                return route;
             }
-
-            composants["schemas"] = destination;
-            document["components"] = composants;
         }
 
-        return document;
+        return null;
     }
+
+    private static void Completer(JsonObject document, string titre, string prefixe, bool joignable)
+    {
+        if (document["info"] is not JsonObject info)
+        {
+            info = new JsonObject();
+            document["info"] = info;
+        }
+
+        info["title"] = "UQAR Live — " + titre;
+        info["version"] ??= "1.0";
+        info["description"] = joignable
+            ? "Try it out appelle cette passerelle. Les chemins commencent par " + prefixe + "."
+            : "Ce service est injoignable. La page reste ouverte. Les chemins commenceront par " + prefixe + ".";
+        document["servers"] = new JsonArray(new JsonObject { ["url"] = "/" });
+    }
+
+    private static string Injoignable(string titre, string prefixe)
+    {
+        var document = new JsonObject
+        {
+            ["openapi"] = "3.0.4",
+            ["paths"] = new JsonObject()
+        };
+        Completer(document, titre, prefixe, joignable: false);
+        return Serialiser(document);
+    }
+
+    private static string Serialiser(JsonObject document) =>
+        document.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+    private static string Titre(string prefixe) =>
+        Titres.TryGetValue(prefixe, out var titre) ? titre : prefixe.TrimStart('/');
 
     private static string Prefixe(string modele) =>
         modele.Replace("/{everything}", "", StringComparison.Ordinal);
