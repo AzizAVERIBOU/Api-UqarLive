@@ -12,7 +12,12 @@ builder.Services.AddHttpClient("DocumentationAval", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(60);
 });
+builder.Services.AddHttpClient("Reveil", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(90);
+});
 builder.Services.AddSingleton<DocumentationPasserelle>();
+builder.Services.AddSingleton<ReveilServices>();
 
 var environnement = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 if (!string.Equals(environnement, "Testing", StringComparison.OrdinalIgnoreCase))
@@ -31,6 +36,18 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+var reveil = app.Services.GetRequiredService<ReveilServices>();
+app.Use(async (contexte, suivant) =>
+{
+    if (contexte.Request.Path == "/"
+        || contexte.Request.Path == "/health"
+        || contexte.Request.Path.StartsWithSegments("/swagger"))
+    {
+        _ = reveil.Demarrer();
+    }
+
+    await suivant();
+});
 var documentation = app.Services.GetRequiredService<DocumentationPasserelle>();
 app.UseSwaggerUI(options =>
 {
