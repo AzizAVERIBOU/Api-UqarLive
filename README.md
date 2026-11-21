@@ -5,7 +5,11 @@
 [![Ocelot](https://img.shields.io/badge/Gateway-Ocelot-009639)](https://github.com/ThreeMammals/Ocelot)
 [![CI](https://github.com/AzizAVERIBOU/Api-UqarLive/actions/workflows/ci.yml/badge.svg)](https://github.com/AzizAVERIBOU/Api-UqarLive/actions/workflows/ci.yml)
 
-Backend **microservices** pour l’application **UQAR Live** : APIs REST en **ASP.NET Core** (.NET 8), routage centralisé via **Ocelot**, persistance **PostgreSQL** avec **Entity Framework Core** et **Npgsql**.
+UQAR Live est un projet d'été, supervisé par un professeur. Il prépare l'arrière-plan d'une application qui regrouperait des services de la vie universitaire : les menus de la cafétéria, la réservation de salles, les petites annonces et les activités des associations.
+
+Cette application n'est pas initiée pour le moment. Le menu, une salle, une annonce ou l'activité d'une association ne se trouvent pas au même endroit. Ce dépôt comble ce manque : un compte, puis ces quatre services, derrière une même adresse.
+
+Le backend est en **microservices** : APIs REST en **ASP.NET Core** (.NET 8), routage centralisé via **Ocelot**, persistance **PostgreSQL** avec **Entity Framework Core** et **Npgsql**.
 
 Le dépôt compile la solution et exécute les tests avec **GitHub Actions**. Il n’y a pas de déploiement automatique.
 
