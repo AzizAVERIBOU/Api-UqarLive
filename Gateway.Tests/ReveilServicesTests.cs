@@ -33,6 +33,8 @@ public class ReveilServicesTests
         Assert.Equal(2, handler.Adresses.Count);
         Assert.Contains("https://api-uqarlive.onrender.com/health", handler.Adresses);
         Assert.Contains("https://uqarlive-bibliotheque.onrender.com/health", handler.Adresses);
+        Assert.Contains("/biblio/salles", ReveilServices.ScriptNavigateur);
+        Assert.Contains("/asso/ObtenirAssociations", ReveilServices.ScriptNavigateur);
     }
 
     private sealed class Journal : HttpMessageHandler

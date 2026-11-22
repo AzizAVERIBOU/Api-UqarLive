@@ -2,6 +2,11 @@ namespace Gateway.Services;
 
 public class ReveilServices
 {
+    public const string ScriptNavigateur = """
+        ["/auth/test", "/biblio/salles", "/marche/produits", "/cafete/menuitems", "/asso/ObtenirAssociations"]
+            .forEach(function (chemin) { fetch(chemin).catch(function () {}); });
+        """;
+
     private readonly IHttpClientFactory _clients;
     private readonly IConfiguration _configuration;
     private readonly ILogger<ReveilServices> _logger;
