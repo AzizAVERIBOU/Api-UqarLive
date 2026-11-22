@@ -37,7 +37,7 @@ docker build -t uqarlive-gateway -f Gateway/Dockerfile .
 
 Les méthodes publiées sont GET, POST, PUT et DELETE. Le fichier est `ocelot.json`.
 
-Pas de modèle ni de base. Le port est `PORT`, sinon `5000`. Aucune redirection HTTPS. `/`, `/health` et `/swagger` sont répondues ici et ne partent pas vers un service. Ces trois accès lancent en parallèle un `GET /health` vers chaque service, sans retenir la page. Un second accès dans les 45 secondes ne relance pas ces appels.
+Pas de modèle ni de base. Le port est `PORT`, sinon `5000`. Aucune redirection HTTPS. `/`, `/health` et `/swagger` sont répondues ici et ne partent pas vers un service. La page Swagger appelle en parallèle une lecture de chaque service : l'appel part du navigateur, donc l'instance endormie le reçoit. Un accès à ces pages lance aussi, depuis la passerelle, un `GET /health` vers chaque service, sans retenir la page. Un second accès dans les 45 secondes ne relance pas cet appel serveur.
 
 `GET /` liste ces préfixes. `GET /swagger` propose un document par service : `/swagger/auth.json`, `/swagger/biblio.json`, `/swagger/marche.json`, `/swagger/cafete.json` et `/swagger/asso.json`. Chaque document est lu sur le `/swagger/v1/swagger.json` du service, avec un délai de 60 secondes, et ne garde que les chemins de son contrôleur. Le `/health` du service n'y apparaît pas. « Try it out » appelle cette passerelle. Une instance endormie est relue jusqu'à trois fois. Si elle ne répond toujours pas, la page dit qu'elle se réveille et demande de recharger. Une clé qui n'est pas un préfixe répond 404.
 

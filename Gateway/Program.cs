@@ -15,6 +15,7 @@ builder.Services.AddHttpClient("DocumentationAval", client =>
 builder.Services.AddHttpClient("Reveil", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(90);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("UQARLive-Gateway");
 });
 builder.Services.AddSingleton<DocumentationPasserelle>();
 builder.Services.AddSingleton<ReveilServices>();
@@ -58,6 +59,7 @@ app.UseSwaggerUI(options =>
 
     options.DocumentTitle = "UQAR Live";
     options.DefaultModelsExpandDepth(2);
+    options.InjectJavascript("/reveil.js");
 });
 
 app.MapGet("/", () => Results.Ok(new
@@ -72,6 +74,7 @@ app.MapGet("/", () => Results.Ok(new
     association = "/asso"
 }));
 app.MapGet("/health", () => Results.Ok("Healthy"));
+app.MapGet("/reveil.js", () => Results.Text(ReveilServices.ScriptNavigateur, "text/javascript"));
 app.MapGet("/swagger/{cle}.json", async (string cle, DocumentationPasserelle documentation, CancellationToken annulation) =>
 {
     var json = await documentation.ObtenirAsync(cle, annulation);
@@ -80,11 +83,12 @@ app.MapGet("/swagger/{cle}.json", async (string cle, DocumentationPasserelle doc
         : Results.Content(json, "application/json");
 });
 
-// /, /health et /swagger restent sur la passerelle.
+// /, /health, /reveil.js et /swagger restent sur la passerelle.
 app.MapWhen(
     contexte => !contexte.Request.Path.StartsWithSegments("/swagger")
                 && contexte.Request.Path != "/"
-                && contexte.Request.Path != "/health",
+                && contexte.Request.Path != "/health"
+                && contexte.Request.Path != "/reveil.js",
     branche => branche.UseOcelot().Wait());
 
 app.Run();
