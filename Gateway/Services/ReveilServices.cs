@@ -2,11 +2,6 @@ namespace Gateway.Services;
 
 public class ReveilServices
 {
-    public const string ScriptNavigateur = """
-        ["/auth/test", "/biblio/salles", "/marche/produits", "/cafete/menuitems", "/asso/ObtenirAssociations"]
-            .forEach(function (chemin) { fetch(chemin).catch(function () {}); });
-        """;
-
     private readonly IHttpClientFactory _clients;
     private readonly IConfiguration _configuration;
     private readonly ILogger<ReveilServices> _logger;
@@ -24,6 +19,12 @@ public class ReveilServices
         _configuration = configuration;
         _logger = logger;
         _ecart = ecart ?? TimeSpan.FromSeconds(45);
+    }
+
+    public string ScriptNavigateur()
+    {
+        var adresses = string.Join(", ", AdressesSante().Select(adresse => "\"" + adresse + "\""));
+        return "[" + adresses + "].forEach(function (adresse) { fetch(adresse, { mode: \"no-cors\" }).catch(function () {}); });";
     }
 
     public Task Demarrer()
