@@ -74,7 +74,7 @@ app.MapGet("/", () => Results.Ok(new
     association = "/asso"
 }));
 app.MapGet("/health", () => Results.Ok("Healthy"));
-app.MapGet("/reveil.js", () => Results.Text(ReveilServices.ScriptNavigateur, "text/javascript"));
+app.MapGet("/reveil.js", () => Results.Text(reveil.ScriptNavigateur(), "text/javascript"));
 app.MapGet("/swagger/{cle}.json", async (string cle, DocumentationPasserelle documentation, CancellationToken annulation) =>
 {
     var json = await documentation.ObtenirAsync(cle, annulation);
